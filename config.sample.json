@@ -1,0 +1,9 @@
+{
+  "dry_run": true,
+  "binance": {
+    "apiKey": "",
+    "secret": "",
+    "timeout": 30000,
+    "enableRateLimit": true
+  }
+}
