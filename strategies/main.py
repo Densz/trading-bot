@@ -1,29 +1,43 @@
+from pprint import pprint
+import talib.abstract as ta
+
 RSI_LOWER_LEVEL = 30
 RSI_MIDDLE_LEVEL = 100
 
 
-class Strategy():
-    timeframe = "1h"
-    startup_candles = 200
-    tickers = ["BTC/USDT",
-               "LINK/USDT"]
+class Strategy:
     main_currency = 'USDT'
-    max_tradable_amount = 1000
+    amount_allocated = 1000
 
-    def on_init():
-        print("on_init called")
+    timeframe = "1h"
+    tickers = ["BTC/USDT",
+               "DOT/USDT",
+               "LINK/USDT",
+               "LTC/USDT",
+               "BCH/USDT",
+               "ATOM/USDT",
+               "SXP/USDT"]
 
-    def on_deinit():
-        print("de_init called")
+    def __init__(self):
+        print("[STRATEGY] Bollinger bands strategy")
+        pass
 
-    def on_tick(df):
-        """
-          Useful for stoploss or takeprofit
-        """
-        print("on_tick called")
+    def on_tick(self, tickers):
+        pass
 
-    def on_new_candle(df):
-        """
-          Useful for stoploss or takeprofit
-        """
-        print("on_new_candle called")
+    def on_new_candle(self, df, tick):
+        print("Tick: ", tick)
+        df = self._add_indicators(df)
+        print(df.tail(3))
+
+    def _add_indicators(self, df):
+        df["RSI"] = ta.RSI(df["close"])
+
+        macd = ta.MACD(df, window_fast=12, window_slow=26)
+        df['macd'] = macd['macd']
+        df['macdsignal'] = macd['macdsignal']
+        df['macdhist'] = macd['macdhist']
+
+        df['sma200'] = ta.SMA(df, timeperiod=200)
+
+        return df

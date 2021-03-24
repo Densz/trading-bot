@@ -12,4 +12,4 @@ Run the program once
 
 Run the program when on file changes (make sure you have installed [nodemon](https://nodemon.io/))
 
-`nodemon --watch tradingbot -e py --exec python3 -m tradingbot`
+`nodemon --watch tradingbot --watch strategies -e py --exec python3 -m tradingbot`

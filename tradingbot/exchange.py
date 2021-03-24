@@ -1,8 +1,16 @@
+import ccxt.async_support as ccxt
 import ccxt
+import pandas as pd
 import ccxt.async_support as ccxt_async
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
-from typing import Dict
+from typing import Dict, Optional
+from pprint import pprint
+
+from datetime import datetime
+
+
+DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
 
 
 class Exchange:
@@ -12,6 +20,19 @@ class Exchange:
         })
         self._api.load_markets()
         self._api_async: ccxt_async.Exchange = None
+
+    def fetch_tickers(self, tickers):
+        return self._api.fetch_tickers(tickers)
+
+    def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
+        data: list = self._api.fetch_ohlcv(tickers, timeframe)
+        df = pd.DataFrame(data, columns=DEFAULT_DATAFRAME_COLUMNS)
+        df['date'] = pd.to_datetime(df['date'], unit='ms')
+        return df
+
+    def get_balance(self, currency):
+        balances = self._api.fetch_total_balance()
+        return balances[currency]
 
     def get_market_symbols(self):
         return self._api.symbols
@@ -28,21 +49,12 @@ class Exchange:
     def cancel_order(self, order_id):
         print("cancel_order")
 
-    def get_available_amount():
-        print("get_available_amount")
+    def get_trading_fees(self):
+        return 0.001
 
-
-# from tradingbot.exchange import Exchange
-
-# test = Exchange()
-# binance = ccxt.binance({
-#     'apiKey': 'uR7IjNwUAB5GpocH79xWmavd34Ow74Q4juonLOabUAnjecjInccG0LedVg0xNvuW',
-#     'secret': 'AfwfH2JqGFc4D5GJy77k9Dtcyl0h3fY0sqKdOExTNKLkwXNk4ifOQImUZOWW1ViN',
-#     'timeout': 30000,
-#     'enableRateLimit': True,
-# })
-
-# symbols = ['BTC/USDT', 'ETH/USDT']
+# ohlcv = self._api.fetch_ohlcv('BTC/USDT', '1h', since='20200101')
+# print(ohlcv)
+# return self._api.calculate_fee()
 
 # market = binance.load_markets()
 # binance_available_symbols = binance.symbols
@@ -52,7 +64,6 @@ class Exchange:
 # print(binance.fetch_trades('LTC/USDT'))
 
 # print(binance.fetch_balance())
-
 
 # sell one ฿ for market price and receive $ right now
 # print(binance.id, binance.create_market_sell_order('BTC/USD', 1))
