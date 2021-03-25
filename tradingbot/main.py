@@ -1,17 +1,16 @@
-from tradingbot.trade import Trade
-from tradingbot.worker import Worker
-
-from tradingbot.exchange import Exchange
 from tradingbot.config import get_config
+from tradingbot.database import Database
+from tradingbot.worker import Worker
+from tradingbot.exchange import Exchange
 from strategies.main import Strategy
 
 
 def main() -> None:
     print("==== 🚀 Starting trading bot 🚀 ====")
     config = get_config()
-    exchange = Exchange(config)
-    trade = Trade(config)
-    worker = Worker(config, exchange, trade)
+    database = Database(config)
+    exchange = Exchange(config, database)
+    worker = Worker(config, exchange)
 
     try:
         worker.start()

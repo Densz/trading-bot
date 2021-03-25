@@ -1,11 +1,11 @@
-from pprint import pprint
+from pandas.core.frame import DataFrame
+from tradingbot.types import Tick
+from tradingbot.exchange import Exchange
 import talib.abstract as ta
-
-RSI_LOWER_LEVEL = 30
-RSI_MIDDLE_LEVEL = 100
+from pprint import pprint
 
 
-class Strategy:
+class Strategy():
     main_currency = 'USDT'
     amount_allocated = 1000
 
@@ -16,21 +16,33 @@ class Strategy:
                "LTC/USDT",
                "BCH/USDT",
                "ATOM/USDT",
-               "SXP/USDT"]
+               "SXP/USDT",
+               "DOGE/USDT"]
 
-    def __init__(self):
-        print("[STRATEGY] Bollinger bands strategy")
+    # For backtesting will save the params in DB
+    # Could be useful for machine learning testing best parameters for better results
+    strategy_params = {
+        'id': 'Bollinger bands strategy',  # Should always be here
+        'rsi_lower_level': 30,
+        'rsi_high_level': 70
+    }
+
+    def __init__(self, exchange: Exchange):
+        print(f"[STRATEGY] {self.strategy_params['id']}")
+        self._exchange = exchange
         pass
 
-    def on_tick(self, tickers):
-        pass
-
-    def on_new_candle(self, df, tick):
-        print("Tick: ", tick)
+    def on_tick(self, df: DataFrame, tick: Tick) -> None:
+        print("Tick: ", tick["symbol"])
         df = self._add_indicators(df)
-        print(df.tail(3))
+        print(df.tail(1))
+        pprint(tick)
+        # test = self._exchange.create_buy_order(
+        #     tick['symbol'], 400, 0.032336)
+        # pprint(test)
+        pass
 
-    def _add_indicators(self, df):
+    def _add_indicators(self, df: DataFrame) -> DataFrame:
         df["RSI"] = ta.RSI(df["close"])
 
         macd = ta.MACD(df, window_fast=12, window_slow=26)
