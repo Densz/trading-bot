@@ -1,6 +1,5 @@
-import ccxt
+import ccxt.async_support as ccxt
 import pandas as pd
-import ccxt.async_support as ccxt_async
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from typing import Dict, Optional
@@ -17,42 +16,36 @@ class Exchange:
         self._api: ccxt.Exchange = ccxt.binance({
             **config['binance']
         })
-        self._api.load_markets()
-        self._api_async: ccxt_async.Exchange = ccxt_async.binance()
         self._db = database
         self._params = {
             'test': config['dry_run']
         }
 
     # ✅
-    def fetch_ticker(self, tick: str):
-        return self._api.fetch_ticker(tick)
+    async def fetch_ticker(self, tick: str):
+        print(self._api.iso8601(self._api.milliseconds()),
+              'fetching', tick, 'ticker from', self._api.name)
+        return await self._api.fetch_ticker(tick)
 
     # ✅
-    def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
-        data: list = self._api.fetch_ohlcv(tickers, timeframe)
+    async def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
+        data: list = await self._api.fetch_ohlcv(tickers, timeframe)
         df = pd.DataFrame(data, columns=DEFAULT_DATAFRAME_COLUMNS)
         df['date'] = pd.to_datetime(df['date'], unit='ms')
         return df
 
     # ✅
-    def get_balance(self, currency):
-        balances = self._api.fetch_total_balance()
+    async def get_balance(self, currency):
+        balances = await self._api.fetch_total_balance()
         return balances[currency]
 
     # ✅
-    def get_market_symbols(self):
-        return self._api.symbols
-
-    # ✅
-    def create_buy_order(
+    async def create_buy_order(
         self, symbol: str,
         amount: float,
         price: Optional[float] = None,
         stop_loss: Optional[float] = None
     ):
-        if (amount * price < 10):
-            return 'Could not create order less than 10 USDT'
         """
         {
             'amount': 400.0,
@@ -90,8 +83,28 @@ class Exchange:
             'type': 'limit'
         }
         """
-        return self._api.create_limit_buy_order(
-            symbol, amount, price, params=self._params)
+        if (amount * price < 10):
+            print('Could not create order less than 10 USDT')
+            return
+        try:
+            formatted_amount = self._api.amount_to_precision(symbol, amount)
+            print('Amount: ', str(amount))
+            print('Formatted amount: ', str(formatted_amount))
+            formatted_price = self._api.price_to_precision(symbol, price)
+            print('Price: ', str(price))
+            print('Formatted price: ', str(formatted_price))
+            order = await self._api.create_limit_buy_order(
+                symbol, formatted_amount, formatted_price, params=self._params)
+            pprint(order)
+        except ccxt.InsufficientFunds as e:
+            print('create_order() failed – not enough funds')
+            print(e)
+        except Exception as e:
+            print('create_order() failed')
+            print(e)
+        return
+
+    # def get_trades(self):
 
     def update_order(self, order_id, stop_loss: None, take_profit: None):
         print("update_order")
@@ -105,11 +118,6 @@ class Exchange:
     def get_trading_fees(self):
         return 0.001
 
-# sell one ฿ for market price and receive $ right now
-# print(binance.id, binance.create_market_sell_order('BTC/USD', 1))
-
-# limit buy BTC/EUR, you pay €2500 and receive ฿1  when the order is closed
-# print(exmo.id, exmo.create_limit_buy_order('BTC/EUR', 1, 2500.00))
-
-# pass/redefine custom exchange-specific order params: type, amount, price, flags, etc...
-# kraken.create_market_buy_order('BTC/USD', 1, {'trading_agreement': 'agree'})
+    # ✅
+    def get_market_symbols(self):
+        return self._api.symbols

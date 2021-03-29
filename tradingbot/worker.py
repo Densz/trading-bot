@@ -1,4 +1,6 @@
 import time
+import asyncio
+import ccxt
 from tradingbot.types import Tick
 from typing import Dict, TypedDict
 from tradingbot.database import Database
@@ -17,26 +19,25 @@ class Worker:
         self._exchange = exchange
         self._config = config
         self._strategy = Strategy(exchange)
-        balance = self._exchange.get_balance(self._strategy.main_currency)
-        print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
-
         self._last_throttle_time = 0
 
     # ✅
     def start(self):
         while True:
-            self._throttle()
+            asyncio.get_event_loop().run_until_complete(self._throttle())
 
     # ✅
-    def _run_bot(self):
+    async def _run_bot(self):
+        balance = await self._exchange.get_balance(self._strategy.main_currency)
+        print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
         try:
             tickers = self._strategy.tickers
             timeframe = self._strategy.timeframe
 
             # Call Strategy.on_new_candle()
             for tick in tickers:
-                tick_info = self._exchange.fetch_ticker(tick)
-                dataframe = self._exchange.fetch_ohlcv(tick, timeframe)
+                tick_info = await self._exchange.fetch_ticker(tick)
+                dataframe = await self._exchange.fetch_ohlcv(tick, timeframe)
                 # Always remove the last row of the dataframe otherwise
                 # the last candle won't be a finished candle
                 dataframe = dataframe[:-1]
@@ -49,13 +50,28 @@ class Worker:
                     'baseVolume': tick_info['baseVolume'],
                 }
                 self._strategy.on_tick(dataframe, current_tick)
+        except ccxt.RequestTimeout as e:
+            print('[' + type(e).__name__ + ']')
+            print(str(e)[0:200])
+            # will retry
+        except ccxt.DDoSProtection as e:
+            print('[' + type(e).__name__ + ']')
+            print(str(e.args)[0:200])
+            # will retry
+        except ccxt.ExchangeNotAvailable as e:
+            print('[' + type(e).__name__ + ']')
+            print(str(e.args)[0:200])
+            # will retry
+        except ccxt.ExchangeError as e:
+            print('[' + type(e).__name__ + ']')
+            print(str(e)[0:200])
         except ValueError:
             print("Fail: _run_bot() trying again...")
 
     # ✅
-    def _throttle(self):
+    async def _throttle(self):
         self._last_throttle_time = time.time()
-        self._run_bot()
+        await self._run_bot()
         time_passed = time.time() - self._last_throttle_time
         sleep_duration = max(THROTTLE_SECS - time_passed, 0.0)
         print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "

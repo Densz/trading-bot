@@ -1,3 +1,4 @@
+import asyncio
 from tradingbot.config import get_config
 from tradingbot.database import Database
 from tradingbot.worker import Worker
@@ -21,4 +22,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.get_event_loop().run_until_complete(main())
