@@ -23,13 +23,13 @@ class Worker:
 
     # ✅
     def start(self):
-        while True:
-            asyncio.get_event_loop().run_until_complete(self._throttle())
+        # while True:
+        asyncio.get_event_loop().run_until_complete(self._throttle())
 
     # ✅
     async def _run_bot(self):
         balance = await self._exchange.get_balance(self._strategy.main_currency)
-        print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
+        # print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
         try:
             tickers = self._strategy.tickers
             timeframe = self._strategy.timeframe
@@ -49,7 +49,7 @@ class Worker:
                     'close': tick_info['close'],
                     'baseVolume': tick_info['baseVolume'],
                 }
-                self._strategy.on_tick(dataframe, current_tick)
+                await self._strategy.on_tick(dataframe, current_tick)
         except ccxt.RequestTimeout as e:
             print('[' + type(e).__name__ + ']')
             print(str(e)[0:200])

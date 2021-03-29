@@ -20,37 +20,57 @@ class Database:
         except:
             pass
 
-    # def create_trade(self):
-    #     print("create_trade")
+    def get_open_orders(self):
+        pass
 
-    # def get_open_trades(self):
-    #     print("get_open_orders")
+    def get_strategy_used_balance(self):
+        pass
 
-    # def update_trade(self):
-    #     print("update_trade")
+    def get_profit(self, strategy_name=None):
+        pass
 
-    # def close_trade(self, trade_id):
-    #     print("set_trade_as_done")
-
-    # def _create_db(self):
-    #     pass
+    def has_trade_open(self, symbol):
+        pass
 
 
 class Trade(pw.Model):
+    exchange = pw.CharField(default='binance')
+
     symbol = pw.CharField()
+    strategy = pw.CharField(null=False)
+    timeframe = pw.CharField(null=False)
 
-    status = pw.CharField(default="OPEN")  # enum(FILLED, CLOSED)
+    is_long = pw.BooleanField(default=True)
 
-    open_rate = pw.FloatField()
-    fee_open = pw.FloatField()
+    amount_start = pw.FloatField(null=False)
+    amount_available = pw.FloatField(null=True)
+    amount_end = pw.FloatField(null=True)
 
-    close_rate = pw.FloatField(null=True)
-    fee_close = pw.FloatField(null=True)
+    open_order_id = pw.CharField(null=False)
+    open_order_status = pw.CharField(null=False, default="open")
+    open_price_requested = pw.FloatField(null=True)
+    open_price = pw.FloatField(null=True)
+    open_fee_rate = pw.FloatField(default=0.001)
+    open_fee = pw.FloatField(null=True)
+    open_date = pw.DateTimeField(null=False)
 
-    stop_loss = pw.FloatField(null=True)
+    close_order_id = pw.CharField(null=False)
+    close_order_status = pw.BooleanField(default="open")
+    close_price_requested = pw.FloatField(null=True)
+    close_price = pw.FloatField(null=True)
+    close_fee_rate = pw.FloatField(default=0.001)
+    close_fee = pw.FloatField(null=True)
+    close_date = pw.DateTimeField(null=False)
+
+    initial_stop_loss = pw.FloatField(null=True, default=0.0)
+    current_stop_loss = pw.FloatField(null=True, default=0.0)
     take_profit = pw.FloatField(null=True)
+
+    profit = pw.FloatField(null=True)
+    profit_pct = pw.FloatField(null=True)
+    sell_reason = pw.CharField(null=True)
 
     created_at = pw.DateTimeField(default=datetime.now)
 
     class Meta:
-        database = db  # This model uses the "people.db" database.
+        database = db

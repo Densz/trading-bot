@@ -1,5 +1,6 @@
 import ccxt.async_support as ccxt
 import pandas as pd
+import asyncio
 from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
                                             decimal_to_precision)
 from typing import Dict, Optional
@@ -16,6 +17,7 @@ class Exchange:
         self._api: ccxt.Exchange = ccxt.binance({
             **config['binance']
         })
+        asyncio.get_event_loop().run_until_complete(self._api.load_markets())
         self._db = database
         self._params = {
             'test': config['dry_run']
@@ -23,8 +25,8 @@ class Exchange:
 
     # ✅
     async def fetch_ticker(self, tick: str):
-        print(self._api.iso8601(self._api.milliseconds()),
-              'fetching', tick, 'ticker from', self._api.name)
+        # print(self._api.iso8601(self._api.milliseconds()),
+        #       'fetching', tick, 'ticker from', self._api.name)
         return await self._api.fetch_ticker(tick)
 
     # ✅
@@ -46,43 +48,6 @@ class Exchange:
         price: Optional[float] = None,
         stop_loss: Optional[float] = None
     ):
-        """
-        {
-            'amount': 400.0,
-            'average': None,
-            'clientOrderId': 'x-R4BD3S82c5dc5801380c7e2c35f7cd',
-            'cost': 0.0,
-            'datetime': '2021-03-25T11:23:37.010Z',
-            'fee': None,
-            'filled': 0.0,
-            'id': '409646107',
-            'info': {'clientOrderId': 'x-R4BD3S82c5dc5801380c7e2c35f7cd',
-                    'cummulativeQuoteQty': '0.00000000',
-                    'executedQty': '0.00000000',
-                    'orderId': 409646107,
-                    'orderListId': -1,
-                    'origQty': '400.00000000',
-                    'price': '0.03233600',
-                    'side': 'BUY',
-                    'status': 'NEW',
-                    'symbol': 'DOGEUSDT',
-                    'timeInForce': 'GTC',
-                    'transactTime': 1616671417010,
-                    'type': 'LIMIT'},
-            'lastTradeTimestamp': None,
-            'postOnly': False,
-            'price': 0.032336,
-            'remaining': 400.0,
-            'side': 'buy',
-            'status': 'open',
-            'stopPrice': None,
-            'symbol': 'DOGE/USDT',
-            'timeInForce': 'GTC',
-            'timestamp': 1616671417010,
-            'trades': None,
-            'type': 'limit'
-        }
-        """
         if (amount * price < 10):
             print('Could not create order less than 10 USDT')
             return
@@ -121,3 +86,6 @@ class Exchange:
     # ✅
     def get_market_symbols(self):
         return self._api.symbols
+
+    async def close_connection(self):
+        await self._api.close()

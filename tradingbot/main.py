@@ -18,8 +18,9 @@ def main() -> None:
     except ValueError:
         print("Oops! An error occured")
     finally:
+        asyncio.get_event_loop().run_until_complete(exchange.close_connection())
         print("==== 🚀 Stop trading bot 🚀 ====")
 
 
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(main())
+    main()
