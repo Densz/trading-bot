@@ -1,6 +1,7 @@
 import time
 import asyncio
 import ccxt
+from pandas.core.frame import DataFrame
 from tradingbot.types import Tick
 from typing import Dict, TypedDict
 from tradingbot.database import Database
@@ -23,8 +24,8 @@ class Worker:
 
     # ✅
     def start(self):
-        # while True:
-        asyncio.get_event_loop().run_until_complete(self._throttle())
+        while True:
+            asyncio.get_event_loop().run_until_complete(self._throttle())
 
     # ✅
     async def _run_bot(self):
@@ -36,8 +37,8 @@ class Worker:
 
             # Call Strategy.on_new_candle()
             for tick in tickers:
-                tick_info = await self._exchange.fetch_ticker(tick)
-                dataframe = await self._exchange.fetch_ohlcv(tick, timeframe)
+                tick_info = await self._exchange.fetch_symbol(tick)
+                dataframe: DataFrame = await self._exchange.fetch_ohlcv(tick, timeframe)
                 # Always remove the last row of the dataframe otherwise
                 # the last candle won't be a finished candle
                 dataframe = dataframe[:-1]

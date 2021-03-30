@@ -4,7 +4,7 @@ from tradingbot.config import get_config
 
 config = get_config()
 
-db = pw.SqliteDatabase('sandbox.db' if config['dry_run'] ==
+db = pw.SqliteDatabase('sandbox.db' if config['paper_mode'] ==
                        True else 'live.db')
 
 
@@ -14,7 +14,7 @@ class Database:
 
         db.connect()
         try:
-            if (config['dry_run'] == True):
+            if (config['paper_mode'] == True):
                 db.drop_tables([Trade])
             db.create_tables([Trade])
         except:

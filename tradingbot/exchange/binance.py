@@ -1,30 +1,25 @@
+from typing import Optional
 import ccxt.async_support as ccxt
 import pandas as pd
 import asyncio
-from ccxt.base.decimal_to_precision import (ROUND_DOWN, ROUND_UP, TICK_SIZE, TRUNCATE,
-                                            decimal_to_precision)
-from typing import Dict, Optional
-from pprint import pprint
 
-from datetime import datetime
+from tradingbot.exchange.exchange import Exchange
+from tradingbot.database import Trade
 
 
-DEFAULT_DATAFRAME_COLUMNS = ['date', 'open', 'high', 'low', 'close', 'volume']
-
-
-class Exchange:
+class Binance(Exchange):
     def __init__(self, config, database) -> None:
-        self._api: ccxt.Exchange = ccxt.binance({
-            **config['binance']
-        })
+        Exchange.__init__(self, config, database)
+
+        self._exchange_name = 'binance'
+
+        self._api: ccxt.Exchange = ccxt.binance({**config['binance']})
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
-        self._db = database
-        self._params = {
-            'test': config['dry_run']
-        }
+        # ccxt params for making calls
+        self._params = {'test': config['paper_mode']}
 
     # ✅
-    async def fetch_ticker(self, tick: str):
+    async def fetch_symbol(self, tick: str):
         # print(self._api.iso8601(self._api.milliseconds()),
         #       'fetching', tick, 'ticker from', self._api.name)
         return await self._api.fetch_ticker(tick)
@@ -32,7 +27,7 @@ class Exchange:
     # ✅
     async def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
         data: list = await self._api.fetch_ohlcv(tickers, timeframe)
-        df = pd.DataFrame(data, columns=DEFAULT_DATAFRAME_COLUMNS)
+        df = pd.DataFrame(data, columns=self._columns)
         df['date'] = pd.to_datetime(df['date'], unit='ms')
         return df
 
@@ -53,14 +48,14 @@ class Exchange:
             return
         try:
             formatted_amount = self._api.amount_to_precision(symbol, amount)
-            print('Amount: ', str(amount))
-            print('Formatted amount: ', str(formatted_amount))
             formatted_price = self._api.price_to_precision(symbol, price)
-            print('Price: ', str(price))
-            print('Formatted price: ', str(formatted_price))
-            order = await self._api.create_limit_buy_order(
-                symbol, formatted_amount, formatted_price, params=self._params)
-            pprint(order)
+            if (self._config['paper_mode'] == False):
+                # order = await self._api.create_limit_buy_order(
+                #     symbol, formatted_amount, formatted_price, params=self._params)
+                # pprint(order)
+                Trade.create()
+            else:
+                Trade.create()
         except ccxt.InsufficientFunds as e:
             print('create_order() failed – not enough funds')
             print(e)
@@ -69,16 +64,11 @@ class Exchange:
             print(e)
         return
 
-    # def get_trades(self):
-
     def update_order(self, order_id, stop_loss: None, take_profit: None):
         print("update_order")
 
     def create_sell_order(self, order_id, at_price):
         print("sell_order")
-
-    def cancel_order(self, order_id):
-        print("cancel_order")
 
     def get_trading_fees(self):
         return 0.001
@@ -87,5 +77,6 @@ class Exchange:
     def get_market_symbols(self):
         return self._api.symbols
 
+    # ✅
     async def close_connection(self):
         await self._api.close()

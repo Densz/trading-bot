@@ -3,6 +3,8 @@ from tradingbot.config import get_config
 from tradingbot.database import Database
 from tradingbot.worker import Worker
 from tradingbot.exchange import Exchange
+from tradingbot.exchange.exchange_resolver import ExchangeResolver
+
 from strategies.main import Strategy
 
 
@@ -10,7 +12,11 @@ def main() -> None:
     print("==== 🚀 Starting trading bot 🚀 ====")
     config = get_config()
     database = Database(config)
-    exchange = Exchange(config, database)
+    exchange = ExchangeResolver.load_exchange(
+        config['exchange'],
+        config,
+        database
+    )
     worker = Worker(config, exchange)
 
     try:

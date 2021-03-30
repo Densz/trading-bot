@@ -11,12 +11,12 @@ class Strategy():
 
     timeframe = "1h"
     tickers = ["BTC/USDT",
-               "DOT/USDT",
-               "LINK/USDT",
-               "LTC/USDT",
-               "BCH/USDT",
-               "ATOM/USDT",
-               "SXP/USDT",
+               #    "DOT/USDT",
+               #    "LINK/USDT",
+               #    "LTC/USDT",
+               #    "BCH/USDT",
+               #    "ATOM/USDT",
+               #    "SXP/USDT",
                "DOGE/USDT"]
 
     # For backtesting will save the params in DB
@@ -32,16 +32,6 @@ class Strategy():
         self._exchange = exchange
         pass
 
-    def on_tick(self, df: DataFrame, tick: Tick) -> None:
-        print("Tick: ", tick["symbol"])
-        df = self._add_indicators(df)
-        print(df.tail(1))
-        pprint(tick)
-        # test = self._exchange.create_buy_order(
-        #     tick['symbol'], 400, 0.032336)
-        # pprint(test)
-        pass
-
     def _add_indicators(self, df: DataFrame) -> DataFrame:
         df["RSI"] = ta.RSI(df["close"])
 
@@ -53,3 +43,25 @@ class Strategy():
         df['sma200'] = ta.SMA(df, timeperiod=200)
 
         return df
+
+    async def on_tick(self, df: DataFrame, tick: Tick) -> None:
+        print("Tick: ", tick["symbol"])
+        df = self._add_indicators(df)
+        print(df.tail(1))
+        pprint(tick)
+        # test = self._exchange.create_buy_order(
+        #     tick['symbol'], 400, 0.032336)
+        # pprint(test)
+        pass
+
+    def _calculate_take_profit(self):
+        pass
+
+    def _calculate_stop_loss(self):
+        pass
+
+    def _calculate_amount(self):
+        pass
+
+    def _check_if_order_open(self):
+        pass
