@@ -44,7 +44,6 @@ class Trade(pw.Model):
 
     amount_start = pw.FloatField(null=False)
     amount_available = pw.FloatField(null=True)
-    amount_end = pw.FloatField(null=True)
 
     open_order_id = pw.CharField(null=False)
     open_order_status = pw.CharField(null=False, default="open")
@@ -54,13 +53,13 @@ class Trade(pw.Model):
     open_fee = pw.FloatField(null=True)
     open_date = pw.DateTimeField(null=False)
 
-    close_order_id = pw.CharField(null=False)
-    close_order_status = pw.BooleanField(default="open")
+    close_order_id = pw.CharField(null=True)
+    close_order_status = pw.CharField(null=True)
     close_price_requested = pw.FloatField(null=True)
     close_price = pw.FloatField(null=True)
     close_fee_rate = pw.FloatField(default=0.001)
     close_fee = pw.FloatField(null=True)
-    close_date = pw.DateTimeField(null=False)
+    close_date = pw.DateTimeField(null=True)
 
     initial_stop_loss = pw.FloatField(null=True, default=0.0)
     current_stop_loss = pw.FloatField(null=True, default=0.0)

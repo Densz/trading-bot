@@ -1,17 +1,13 @@
+from strategies.main import Strategy
 import pandas as pd
-import asyncio
-from typing import Dict, Optional
-from pprint import pprint
-from datetime import datetime
-
-from pandas.core.frame import DataFrame
+from typing import Optional
 
 from tradingbot.exchange import Exchange
-from tradingbot.database import Trade
+from tradingbot.database import Database
 
 
 class Oanda(Exchange):
-    def __init__(self, config, database) -> None:
+    def __init__(self, config, database: Database, strategy: Strategy) -> None:
         self._api: None
         self._config = config
 

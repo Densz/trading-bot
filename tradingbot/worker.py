@@ -24,8 +24,8 @@ class Worker:
 
     # ✅
     def start(self):
-        while True:
-            asyncio.get_event_loop().run_until_complete(self._throttle())
+        # while True:
+        asyncio.get_event_loop().run_until_complete(self._throttle())
 
     # ✅
     async def _run_bot(self):

@@ -15,7 +15,8 @@ def main() -> None:
     exchange = ExchangeResolver.load_exchange(
         config['exchange'],
         config,
-        database
+        database,
+        Strategy
     )
     worker = Worker(config, exchange)
 
