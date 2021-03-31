@@ -49,13 +49,26 @@ class Strategy():
         df = self._add_indicators(df)
         # print(df.tail(1))
         # pprint(tick)
-        await self._exchange.create_buy_order(
-            symbol=tick['symbol'],
-            amount=400,
-            price=0.032336,
-            stop_loss=0.032336 * 0.8,
-            take_profit=0.032336 * 1.2
-        )
+        limit = 10.5  # usdt
+        amount = limit / tick['close']
+
+        # await self._exchange.create_sell_order(symbol=tick['symbol'], price=tick['close'], reason="TP")
+
+        # await self._exchange.create_buy_order(
+        #     symbol=tick['symbol'],
+        #     amount=amount,
+        #     price=tick['close'],
+        #     stop_loss=tick['close'] * 0.9,
+        #     take_profit=tick['close'] * 1.1
+        # )
+
+        # await self._exchange.create_buy_order(
+        #     symbol=tick['symbol'],
+        #     amount=400,
+        #     price=0.032336,
+        #     stop_loss=0.032336 * 0.8,
+        #     take_profit=0.032336 * 1.2
+        # )
         pass
 
     def _calculate_take_profit(self):

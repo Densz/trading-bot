@@ -52,6 +52,7 @@ class Trade(pw.Model):
     open_fee_rate = pw.FloatField(default=0.001)
     open_fee = pw.FloatField(null=True)
     open_date = pw.DateTimeField(null=False)
+    open_cost = pw.FloatField(null=True)
 
     close_order_id = pw.CharField(null=True)
     close_order_status = pw.CharField(null=True)
@@ -60,6 +61,7 @@ class Trade(pw.Model):
     close_fee_rate = pw.FloatField(default=0.001)
     close_fee = pw.FloatField(null=True)
     close_date = pw.DateTimeField(null=True)
+    close_cost = pw.FloatField(null=True)
 
     initial_stop_loss = pw.FloatField(null=True, default=0.0)
     current_stop_loss = pw.FloatField(null=True, default=0.0)

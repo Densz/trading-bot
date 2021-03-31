@@ -9,8 +9,10 @@ from strategies.main import Strategy
 
 
 def main() -> None:
-    print("\033[33m==== 🚀 Starting trading bot 🚀 ====\033[39m")
     config = get_config()
+    mode = "PAPER MODE" if config['paper_mode'] else "LIVE MODE"
+    print(
+        f"\033[36m==== 🚀 Starting trading bot ({mode}) 🚀 ====\033[39m")
     database = Database(config)
     exchange = ExchangeResolver.load_exchange(
         config['exchange'],
@@ -26,7 +28,8 @@ def main() -> None:
         print("Oops! An error occured")
     finally:
         asyncio.get_event_loop().run_until_complete(exchange.close_connection())
-        print("==== 🚀 Stop trading bot 🚀 ====")
+        print(
+            f"\033[36m==== ⛔ Stop trading bot ({mode}) ⛔ ====\033[39m")
 
 
 if __name__ == '__main__':

@@ -32,10 +32,15 @@ class Worker:
         balance = await self._exchange.get_balance(self._strategy.main_currency)
         # print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
         try:
+            if (hasattr(self._exchange, "check_pending_orders")):
+                await self._exchange.check_pending_orders()
+
+            if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
+                await self._exchange.trigger_stoploss_takeprofit()
+
             tickers = self._strategy.tickers
             timeframe = self._strategy.timeframe
 
-            # Call Strategy.on_new_candle()
             for tick in tickers:
                 tick_info = await self._exchange.fetch_symbol(tick)
                 dataframe: DataFrame = await self._exchange.fetch_ohlcv(tick, timeframe)
@@ -52,12 +57,6 @@ class Worker:
                 }
 
                 await self._strategy.on_tick(dataframe, current_tick)
-
-                if (hasattr(self._exchange, "check_pending_orders")):
-                    await self._exchange.check_pending_orders()
-
-                if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
-                    await self._exchange.trigger_stoploss_takeprofit()
 
         except ccxt.RequestTimeout as e:
             print('[' + type(e).__name__ + ']')
