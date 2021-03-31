@@ -28,7 +28,7 @@ class Strategy():
     }
 
     def __init__(self, exchange):
-        print(f"[STRATEGY] {self.strategy_params['id']}")
+        print(f"\033[34m[STRATEGY] {self.strategy_params['id']}", "\033[39m")
         self._exchange = exchange
         pass
 
@@ -45,10 +45,10 @@ class Strategy():
         return df
 
     async def on_tick(self, df: DataFrame, tick: Tick) -> None:
-        print("Tick: ", tick["symbol"])
+        print("\033[34m---> Tick: ", tick["symbol"], "\033[39m")
         df = self._add_indicators(df)
-        print(df.tail(1))
-        pprint(tick)
+        # print(df.tail(1))
+        # pprint(tick)
         await self._exchange.create_buy_order(
             symbol=tick['symbol'],
             amount=400,

@@ -66,16 +66,20 @@ class Binance(Exchange):
                 timeframe=self._strategy.timeframe,
                 is_long=is_long,
                 amount_start=formatted_amount,
-                amount_available=amount * (1 - trading_fee_rate),
-                open_order_id="abcdr",  # only on backtesting
-                open_order_status="open",  # only on backtesting
+                amount_available=order['remaining'] if order != None else (
+                    amount * (1 - trading_fee_rate)),
+                open_order_id=order['id'] if order != None else "backtesting",
+                open_order_status=order['status'] if order != None else "open",
                 open_price_requested=formatted_price,
-                open_price=formatted_price,  # only on backtesting
+                open_price=(order['price'] * (1 - trading_fee_rate)) if order != None else (float(formatted_price) * (
+                    1 - trading_fee_rate)),
                 open_fee_rate=trading_fee_rate,
-                open_fee=amount * trading_fee_rate,
-                open_date=datetime.now(),  # only on backtesting
-                initial_stop_loss=stop_loss,  # only on backtesting
-                take_profit=take_profit  # only on backtesting
+                open_fee=(order['price'] * trading_fee_rate) if order != None else float(
+                    formatted_price) * trading_fee_rate,
+                open_date=datetime.now(),
+                initial_stop_loss=stop_loss,
+                current_stop_loss=stop_loss,
+                take_profit=take_profit
             )
         except ccxt.InsufficientFunds as e:
             print('create_order() failed – not enough funds')
@@ -87,12 +91,7 @@ class Binance(Exchange):
             return False
         return True
 
-    def update_order(self, order_id, stop_loss: None, take_profit: None):
-        print("update_order")
-
-    def create_sell_order(self, order_id, at_price):
-        print("sell_order")
-
+    # ✅
     def get_trading_fees(self):
         return 0.001
 
@@ -103,3 +102,17 @@ class Binance(Exchange):
     # ✅
     async def close_connection(self):
         await self._api.close()
+
+    async def trigger_stoploss_takeprofit(self):
+        print("Trigger stoploss and takeprofit if there is")
+        pass
+
+    async def check_pending_orders(self):
+        print("Check pending orders status")
+        pass
+
+    # def update_order(self, order_id, stop_loss: None, take_profit: None):
+    #     print("update_order")
+
+    # def create_sell_order(self, order_id, at_price):
+    #     print("sell_order")

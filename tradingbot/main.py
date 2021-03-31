@@ -9,7 +9,7 @@ from strategies.main import Strategy
 
 
 def main() -> None:
-    print("==== 🚀 Starting trading bot 🚀 ====")
+    print("\033[33m==== 🚀 Starting trading bot 🚀 ====\033[39m")
     config = get_config()
     database = Database(config)
     exchange = ExchangeResolver.load_exchange(

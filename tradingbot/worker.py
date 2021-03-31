@@ -50,7 +50,15 @@ class Worker:
                     'close': tick_info['close'],
                     'baseVolume': tick_info['baseVolume'],
                 }
+
                 await self._strategy.on_tick(dataframe, current_tick)
+
+                if (hasattr(self._exchange, "check_pending_orders")):
+                    await self._exchange.check_pending_orders()
+
+                if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
+                    await self._exchange.trigger_stoploss_takeprofit()
+
         except ccxt.RequestTimeout as e:
             print('[' + type(e).__name__ + ']')
             print(str(e)[0:200])
