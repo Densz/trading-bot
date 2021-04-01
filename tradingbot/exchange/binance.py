@@ -1,9 +1,11 @@
+from os import close
 from pprint import pprint
 from typing import Optional
 import ccxt.async_support as ccxt
 import pandas as pd
 import asyncio
 from datetime import datetime
+import uuid
 
 from tradingbot.exchange.exchange import Exchange
 from tradingbot.database import Database, Trade
@@ -15,7 +17,7 @@ class Binance(Exchange):
 
         self._exchange_name = 'binance'
 
-        self._api: ccxt.Exchange = ccxt.binance({**config['binance']})
+        self._api: ccxt.binance = ccxt.binance({**config['binance']})
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
         # ccxt params for making calls
         self._params = {'test': config['paper_mode']}
@@ -47,7 +49,7 @@ class Binance(Exchange):
         take_profit: Optional[float] = None,
         is_long=True,
     ):
-        open_trade = self._db.get_open_order_for_symbol(symbol=symbol)
+        open_trade = self._db.has_trade_open(symbol=symbol)
         if (open_trade != None):
             print(
                 '\033[31mCould not create order, a trade already exists and is not closed yet\033[39m')
@@ -70,10 +72,8 @@ class Binance(Exchange):
                 strategy=self._strategy.strategy_params['id'],
                 timeframe=self._strategy.timeframe,
                 is_long=is_long,
-                amount_start=formatted_amount,  # FIXME: here is the error come from
-                amount_available=order['remaining'] if order != None else (
-                    amount * (1 - trading_fee_rate)),
-                open_order_id=order['id'] if order != None else "backtesting",
+                amount=formatted_amount,
+                open_order_id=order['id'] if order != None else uuid.uuid4(),
                 open_order_status=order['status'] if order != None else "closed",
                 open_price_requested=formatted_price,
                 open_price=(order['price'] * (1 - trading_fee_rate)) if order != None else (float(formatted_price) * (
@@ -84,7 +84,8 @@ class Binance(Exchange):
                 open_date=datetime.now(),
                 initial_stop_loss=stop_loss,
                 current_stop_loss=stop_loss,
-                take_profit=take_profit
+                take_profit=take_profit,
+                open_cost=amount * price if order == None else None
             )
         except ccxt.InsufficientFunds as e:
             print('create_buy_order() failed – not enough funds')
@@ -117,15 +118,25 @@ class Binance(Exchange):
         try:
             trading_fee_rate = self.get_trading_fees()
             formatted_amount = self._api.amount_to_precision(
-                symbol, trade[0].amount_available)
+                symbol, trade[0].amount)
             formatted_price = self._api.price_to_precision(symbol, price)
+            close_cost = float(formatted_amount) * float(formatted_price)
+            profit = 0
+            profit_pct = 0
+            if (trade[0].is_long == True):
+                profit = close_cost - trade[0].open_cost
+                profit_pct = (close_cost / trade[0].open_cost) - 1
+            else:
+                profit = trade[0].open_cost - close_cost
+                profit_pct = (trade[0].open_cost / close_cost) - 1
+
             order = None
             if (self._config['paper_mode'] == False):
                 order = await self._api.create_limit_sell_order(
                     symbol, formatted_amount, formatted_price, params=self._params)
-            pprint(order)
-            trade[0].update(
-                close_order_id=order['id'] if order != None else "backtesting",
+
+            Trade.update(
+                close_order_id=order['id'] if order != None else uuid.uuid4(),
                 close_order_status=order['status'] if order != None else "closed",
                 close_price_requested=formatted_price,
                 close_price=(order['price'] * (1 - trading_fee_rate)) if order != None else (float(formatted_price) * (
@@ -134,8 +145,11 @@ class Binance(Exchange):
                 close_fee=(order['price'] * trading_fee_rate) if order != None else float(
                     formatted_price) * trading_fee_rate,
                 close_date=datetime.now(),
-                sell_reason=reason
-            ).execute()
+                sell_reason=reason,
+                close_cost=close_cost if order == None else None,
+                profit=profit if order == None else None,
+                profit_pct=profit_pct if order == None else None,
+            ).where(Trade.open_order_id == trade[0].open_order_id).execute()
         except ccxt.InsufficientFunds as e:
             print('create_sell_order() failed – not enough funds')
             print(e)
@@ -158,22 +172,29 @@ class Binance(Exchange):
     async def close_connection(self):
         await self._api.close()
 
-    async def trigger_stoploss_takeprofit(self):
-        print("Trigger stoploss and takeprofit if there is")
+    async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
+        open_orders = self._db.get_open_orders(symbol=symbol)
+        if (open_orders == None):
+            return
+        print("Open orders ===>")
+        for order in open_orders:
+            pprint(order)
+            pprint(ohlc)
         pass
 
     # ✅
     async def check_pending_orders(self) -> None:
+        if (self._config['paper_mode'] == True):
+            return
         try:
             # Check open_order_status orders
             data = Trade.select().where(Trade.open_order_status == 'open').execute()
             for row in data:
                 order_detail = await self._api.fetch_order(id=row.open_order_id, symbol=row.symbol)
-                if (order_detail['status'] != 'open'):
-                    row.update(open_order_status=order_detail['status'],
-                               open_cost=order_detail['cost'],
-                               amount_available=order_detail['filled']
-                               ).execute()
+                if (order_detail['status'] == 'closed'):
+                    Trade.update(open_order_status=order_detail['status'],
+                                 open_cost=order_detail['cost'],
+                                 ).where(Trade.open_order_id == row.open_order_id).execute()
         except Exception as e:
             print('check_pending_orders() for buy orders failed')
             print(e)
@@ -192,11 +213,11 @@ class Binance(Exchange):
                     else:
                         profit = row.open_cost - order_detail['cost']
                         profit_pct = (row.open_cost / order_detail['cost']) - 1
-                    row.update(close_order_status=order_detail['status'],
-                               close_cost=order_detail['cost'],
-                               profit=profit,
-                               profit_pct=profit_pct,
-                               ).execute()
+                    Trade.update(close_order_status=order_detail['status'],
+                                 close_cost=order_detail['cost'],
+                                 profit=profit,
+                                 profit_pct=profit_pct,
+                                 ).where(Trade.open_order_id == row.open_order_id).execute()
         except Exception as e:
             print('check_pending_orders() for sell orders failed')
             print(e)

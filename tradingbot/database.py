@@ -22,7 +22,7 @@ class Database:
         except:
             pass
 
-    def get_open_order_for_symbol(self, symbol: str):
+    def has_trade_open(self, symbol: str):
         query = Trade.select().where(
             Trade.symbol == symbol,
             Trade.exchange == self._config['exchange'],
@@ -42,8 +42,18 @@ class Database:
     def get_profit(self, strategy_name=None):
         pass
 
-    def has_trade_open(self, symbol):
-        pass
+    def get_open_orders(self, symbol):
+        query = Trade.select().where(
+            Trade.symbol == symbol,
+            Trade.exchange == self._config['exchange'],
+            Trade.timeframe == self._strategy.timeframe,
+            Trade.strategy == self._strategy.strategy_params['id'],
+            Trade.open_order_status == 'closed',
+            Trade.close_order_status == None,
+        ).dicts()
+        if (len(query) > 0):
+            return query
+        return None
 
 
 class Trade(pw.Model):
@@ -55,10 +65,9 @@ class Trade(pw.Model):
 
     is_long = pw.BooleanField(default=True)
 
-    amount_start = pw.FloatField(null=False)
-    amount_available = pw.FloatField(null=True)
+    amount = pw.FloatField(null=False)
 
-    open_order_id = pw.CharField(null=False)
+    open_order_id = pw.CharField(null=False, unique=True)
     open_order_status = pw.CharField(null=False, default="open")
     open_price_requested = pw.FloatField(null=True)
     open_price = pw.FloatField(null=True)
@@ -67,7 +76,7 @@ class Trade(pw.Model):
     open_date = pw.DateTimeField(null=False)
     open_cost = pw.FloatField(null=True)
 
-    close_order_id = pw.CharField(null=True)
+    close_order_id = pw.CharField(null=True, unique=True)
     close_order_status = pw.CharField(null=True)
     close_price_requested = pw.FloatField(null=True)
     close_price = pw.FloatField(null=True)

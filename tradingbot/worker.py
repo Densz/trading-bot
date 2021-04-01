@@ -36,9 +36,6 @@ class Worker:
             if (hasattr(self._exchange, "check_pending_orders")):
                 await self._exchange.check_pending_orders()
 
-            if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
-                await self._exchange.trigger_stoploss_takeprofit()
-
             tickers = self._strategy.tickers
             timeframe = self._strategy.timeframe
 
@@ -56,6 +53,8 @@ class Worker:
                     'close': tick_info['close'],
                     'baseVolume': tick_info['baseVolume'],
                 }
+                if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
+                    await self._exchange.trigger_stoploss_takeprofit(symbol=tick_info['symbol'], ohlc=current_tick)
 
                 await self._strategy.on_tick(dataframe, current_tick)
 

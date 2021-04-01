@@ -53,7 +53,7 @@ class Strategy():
         df = self._add_indicators(df)
         limit = 10.5  # USDT
         amount = limit / tick['close']
-        open_trade = self._database.get_open_order_for_symbol(
+        open_trade = self._database.has_trade_open(
             symbol=tick['symbol'])
         last_candle = df.tail(1).to_dict('records')[0]
         print("RSI ->", str(last_candle['RSI']))
@@ -64,7 +64,7 @@ class Strategy():
 
         # There is no open trade
         if (open_trade == None):
-            if (last_candle['RSI'] < 50):
+            if (last_candle['RSI'] < 20):
                 print("RSI under 50")
                 await self._exchange.create_buy_order(
                     symbol=tick['symbol'],
@@ -75,12 +75,12 @@ class Strategy():
                 )
         # When there is open trade
         else:
-            if (last_candle['RSI'] > 55):
+            if (last_candle['RSI'] > 20):
                 print("RSI over 55")
                 await self._exchange.create_sell_order(
                     symbol=tick['symbol'],
                     price=tick['close'],
-                    reason="TP"
+                    reason="RSI OVER 55"
                 )
         pass
 
