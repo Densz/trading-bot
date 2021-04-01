@@ -1,3 +1,4 @@
+from pprint import pprint
 import peewee as pw
 from datetime import datetime
 from tradingbot.config import get_config
@@ -9,8 +10,9 @@ db = pw.SqliteDatabase('sandbox.db' if config['paper_mode'] ==
 
 
 class Database:
-    def __init__(self, config):
+    def __init__(self, config, strategy):
         self._config = config
+        self._strategy = strategy
 
         db.connect()
         try:
@@ -20,8 +22,19 @@ class Database:
         except:
             pass
 
-    def get_open_orders(self):
-        pass
+    def get_open_order_for_symbol(self, symbol: str):
+        query = Trade.select().where(
+            Trade.symbol == symbol,
+            Trade.exchange == self._config['exchange'],
+            Trade.timeframe == self._strategy.timeframe,
+            Trade.strategy == self._strategy.strategy_params['id'],
+            ((Trade.open_order_status == 'open') |
+             (Trade.open_order_status == 'closed')),
+            Trade.close_order_status == None,
+        ).dicts()
+        if (len(query) >= 1):
+            return query[0]
+        return None
 
     def get_strategy_used_balance(self):
         pass

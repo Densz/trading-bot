@@ -16,16 +16,17 @@ THROTTLE_SECS = 5  # sec
 
 
 class Worker:
-    def __init__(self, config, exchange: Exchange) -> None:
+    def __init__(self, config, exchange: Exchange, database: Database) -> None:
         self._exchange = exchange
+        self._database = database
         self._config = config
-        self._strategy = Strategy(exchange)
+        self._strategy = Strategy(exchange, database)
         self._last_throttle_time = 0
 
     # ✅
     def start(self):
-        # while True:
-        asyncio.get_event_loop().run_until_complete(self._throttle())
+        while True:
+            asyncio.get_event_loop().run_until_complete(self._throttle())
 
     # ✅
     async def _run_bot(self):
@@ -73,7 +74,8 @@ class Worker:
         except ccxt.ExchangeError as e:
             print('[' + type(e).__name__ + ']')
             print(str(e)[0:200])
-        except ValueError:
+        except ValueError as e:
+            print(str(e))
             print("Fail: _run_bot() trying again...")
 
     # ✅
@@ -82,6 +84,6 @@ class Worker:
         await self._run_bot()
         time_passed = time.time() - self._last_throttle_time
         sleep_duration = max(THROTTLE_SECS - time_passed, 0.0)
-        print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
-              f"last iteration took {time_passed:.2f}s.")
+        # print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
+        #       f"last iteration took {time_passed:.2f}s.")
         time.sleep(sleep_duration)

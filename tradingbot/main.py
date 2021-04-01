@@ -13,14 +13,14 @@ def main() -> None:
     mode = "PAPER MODE" if config['paper_mode'] else "LIVE MODE"
     print(
         f"\033[36m==== 🚀 Starting trading bot ({mode}) 🚀 ====\033[39m")
-    database = Database(config)
+    database = Database(config, Strategy)
     exchange = ExchangeResolver.load_exchange(
         config['exchange'],
         config,
         database,
         Strategy
     )
-    worker = Worker(config, exchange)
+    worker = Worker(config, exchange, database)
 
     try:
         worker.start()

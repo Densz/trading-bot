@@ -1,3 +1,5 @@
+from tradingbot.exchange.binance import Binance
+from tradingbot.database import Database
 from pandas.core.frame import DataFrame
 from tradingbot.types import Tick
 import talib.abstract as ta
@@ -8,8 +10,9 @@ class Strategy():
     main_currency = 'USDT'
     amount_allocated = 1000
 
-    timeframe = "1h"
-    tickers = ["DOGE/USDT",
+    timeframe = "1m"
+    tickers = ["DOGE/USDT"
+               #    "DOGE/USDT",
                #    "DOT/USDT",
                #    "LINK/USDT",
                #    "LTC/USDT",
@@ -27,9 +30,10 @@ class Strategy():
         'rsi_high_level': 70
     }
 
-    def __init__(self, exchange):
+    def __init__(self, exchange: Binance, database: Database) -> None:
         print(f"\033[34m[STRATEGY] {self.strategy_params['id']}", "\033[39m")
         self._exchange = exchange
+        self._database = database
         pass
 
     def _add_indicators(self, df: DataFrame) -> DataFrame:
@@ -47,28 +51,37 @@ class Strategy():
     async def on_tick(self, df: DataFrame, tick: Tick) -> None:
         print("\033[34m---> Tick: ", tick["symbol"], "\033[39m")
         df = self._add_indicators(df)
-        # print(df.tail(1))
-        # pprint(tick)
-        limit = 10.5  # usdt
+        limit = 10.5  # USDT
         amount = limit / tick['close']
+        open_trade = self._database.get_open_order_for_symbol(
+            symbol=tick['symbol'])
+        last_candle = df.tail(1).to_dict('records')[0]
+        print("RSI ->", str(last_candle['RSI']))
+        print("open_trade ->", open_trade != None)
 
-        # await self._exchange.create_sell_order(symbol=tick['symbol'], price=tick['close'], reason="TP")
+        if (last_candle['RSI'] > 50 and last_candle['RSI'] < 55):
+            print("Between 50 & 55")
 
-        # await self._exchange.create_buy_order(
-        #     symbol=tick['symbol'],
-        #     amount=amount,
-        #     price=tick['close'],
-        #     stop_loss=tick['close'] * 0.9,
-        #     take_profit=tick['close'] * 1.1
-        # )
-
-        # await self._exchange.create_buy_order(
-        #     symbol=tick['symbol'],
-        #     amount=400,
-        #     price=0.032336,
-        #     stop_loss=0.032336 * 0.8,
-        #     take_profit=0.032336 * 1.2
-        # )
+        # There is no open trade
+        if (open_trade == None):
+            if (last_candle['RSI'] < 50):
+                print("RSI under 50")
+                await self._exchange.create_buy_order(
+                    symbol=tick['symbol'],
+                    amount=amount,
+                    price=tick['close'],
+                    stop_loss=tick['close'] * 0.95,
+                    take_profit=tick['close'] * 1.05
+                )
+        # When there is open trade
+        else:
+            if (last_candle['RSI'] > 55):
+                print("RSI over 55")
+                await self._exchange.create_sell_order(
+                    symbol=tick['symbol'],
+                    price=tick['close'],
+                    reason="TP"
+                )
         pass
 
     def _calculate_take_profit(self):
