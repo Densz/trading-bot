@@ -64,7 +64,7 @@ class Strategy():
 
         # There is no open trade
         if (open_trade == None):
-            if (last_candle['RSI'] < 20):
+            if (last_candle['RSI'] < 100):
                 print("RSI under 50")
                 await self._exchange.create_buy_order(
                     symbol=tick['symbol'],
@@ -75,7 +75,7 @@ class Strategy():
                 )
         # When there is open trade
         else:
-            if (last_candle['RSI'] > 20):
+            if (last_candle['RSI'] < 0):
                 print("RSI over 55")
                 await self._exchange.create_sell_order(
                     symbol=tick['symbol'],

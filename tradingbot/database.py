@@ -16,8 +16,8 @@ class Database:
 
         db.connect()
         try:
-            if (config['paper_mode'] == True):
-                db.drop_tables([Trade])
+            # if (config['paper_mode'] == True):
+            #     db.drop_tables([Trade])
             db.create_tables([Trade])
         except:
             pass
@@ -42,18 +42,18 @@ class Database:
     def get_profit(self, strategy_name=None):
         pass
 
-    def get_open_orders(self, symbol):
-        query = Trade.select().where(
+    def get_open_orders(self, symbol: str):
+        open_orders = Trade.select().where(
             Trade.symbol == symbol,
             Trade.exchange == self._config['exchange'],
             Trade.timeframe == self._strategy.timeframe,
             Trade.strategy == self._strategy.strategy_params['id'],
             Trade.open_order_status == 'closed',
             Trade.close_order_status == None,
-        ).dicts()
-        if (len(query) > 0):
-            return query
-        return None
+        ).execute()
+        if (len(open_orders) == 0):
+            return None
+        return open_orders
 
 
 class Trade(pw.Model):

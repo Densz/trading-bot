@@ -23,13 +23,22 @@ class Binance(Exchange):
         self._params = {'test': config['paper_mode']}
 
     # ✅
-    async def fetch_symbol(self, tick: str):
+    async def fetch_current_ohlcv(self, tick: str):
         # print(self._api.iso8601(self._api.milliseconds()),
         #       'fetching', tick, 'ticker from', self._api.name)
-        return await self._api.fetch_ticker(tick)
+        tick_info = await self._api.fetch_ticker(tick)
+        current_tick: Tick = {
+            'symbol': tick_info['symbol'],
+            'high': tick_info['high'],
+            'low': tick_info['low'],
+            'open': tick_info['open'],
+            'close': tick_info['close'],
+            'baseVolume': tick_info['baseVolume'],
+        }
+        return current_tick
 
     # ✅
-    async def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
+    async def fetch_historic_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
         data: list = await self._api.fetch_ohlcv(tickers, timeframe)
         df = pd.DataFrame(data, columns=self._columns)
         df['date'] = pd.to_datetime(df['date'], unit='ms')
@@ -87,6 +96,8 @@ class Binance(Exchange):
                 take_profit=take_profit,
                 open_cost=amount * price if order == None else None
             )
+            print(
+                f"\033[32mCREATE BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m")
         except ccxt.InsufficientFunds as e:
             print('create_buy_order() failed – not enough funds')
             print(e)
@@ -150,6 +161,8 @@ class Binance(Exchange):
                 profit=profit if order == None else None,
                 profit_pct=profit_pct if order == None else None,
             ).where(Trade.open_order_id == trade[0].open_order_id).execute()
+            print(
+                f"\033[31mCREATE SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}], Profit: [${profit:.2f}], Profit %: [{profit_pct:.3f}%]\033[39m")
         except ccxt.InsufficientFunds as e:
             print('create_sell_order() failed – not enough funds')
             print(e)
@@ -174,12 +187,23 @@ class Binance(Exchange):
 
     async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
         open_orders = self._db.get_open_orders(symbol=symbol)
+
         if (open_orders == None):
             return
-        print("Open orders ===>")
+        # print("Open orders ===>")
         for order in open_orders:
-            pprint(order)
+            # All fields in db
+            # pprint(dir(order))
+            """
+            {'baseVolume': 2020700362.0,
+            'close': 0.0582203,
+            'high': 0.0592851,
+            'low': 0.0561885,
+            'open': 0.0564656,
+            'symbol': 'DOGE/USDT'}
+            """
             pprint(ohlc)
+
         pass
 
     # ✅

@@ -40,39 +40,17 @@ class Worker:
             timeframe = self._strategy.timeframe
 
             for tick in tickers:
-                tick_info = await self._exchange.fetch_symbol(tick)
-                dataframe: DataFrame = await self._exchange.fetch_ohlcv(tick, timeframe)
+                tick_details = await self._exchange.fetch_current_ohlcv(tick)
+                dataframe: DataFrame = await self._exchange.fetch_historic_ohlcv(tick, timeframe)
                 # Always remove the last row of the dataframe otherwise
                 # the last candle won't be a finished candle
                 dataframe = dataframe[:-1]
-                current_tick: Tick = {
-                    'symbol': tick_info['symbol'],
-                    'high': tick_info['high'],
-                    'low': tick_info['low'],
-                    'open': tick_info['open'],
-                    'close': tick_info['close'],
-                    'baseVolume': tick_info['baseVolume'],
-                }
+
                 if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
-                    await self._exchange.trigger_stoploss_takeprofit(symbol=tick_info['symbol'], ohlc=current_tick)
+                    await self._exchange.trigger_stoploss_takeprofit(symbol=tick_details['symbol'], ohlc=tick_details)
 
-                await self._strategy.on_tick(dataframe, current_tick)
+                await self._strategy.on_tick(dataframe, tick_details)
 
-        except ccxt.RequestTimeout as e:
-            print('[' + type(e).__name__ + ']')
-            print(str(e)[0:200])
-            # will retry
-        except ccxt.DDoSProtection as e:
-            print('[' + type(e).__name__ + ']')
-            print(str(e.args)[0:200])
-            # will retry
-        except ccxt.ExchangeNotAvailable as e:
-            print('[' + type(e).__name__ + ']')
-            print(str(e.args)[0:200])
-            # will retry
-        except ccxt.ExchangeError as e:
-            print('[' + type(e).__name__ + ']')
-            print(str(e)[0:200])
         except ValueError as e:
             print(str(e))
             print("Fail: _run_bot() trying again...")

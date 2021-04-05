@@ -11,11 +11,11 @@ class Oanda(Exchange):
         self._api: None
         self._config = config
 
-    async def fetch_symbol(self, tick: str):
-        print("fetch_symbol on Oanda")
+    async def fetch_current_ohlcv(self, tick: str):
+        print("fetch_current_ohlcv on Oanda")
         return []
 
-    async def fetch_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
+    async def fetch_historic_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
         pass
 
     async def get_balance(self, currency):
