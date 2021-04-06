@@ -95,27 +95,55 @@ class Binance(Exchange):
             if (self._config['paper_mode'] == False):
                 order = await self._api.create_limit_buy_order(
                     symbol, formatted_amount, formatted_price, params=self._params)
-            Trade.create(
-                exchange=self._exchange_name,
-                symbol=symbol,
-                strategy=self._strategy.strategy_params['id'],
-                timeframe=self._strategy.timeframe,
-                is_long=is_long,
+                Trade.create(
+                    exchange=self._exchange_name,
+                    symbol=symbol,
+                    strategy=self._strategy.strategy_params['id'],
+                    timeframe=self._strategy.timeframe,
+                    is_long=is_long,
 
-                amount_requested=float(formatted_amount),
-                amount_available=(1 - trading_fee_rate) *
-                float(formatted_amount),
+                    amount_requested=float(formatted_amount),
+                    amount_available=((1 - trading_fee_rate)
+                                      * float(formatted_amount)),
 
-                open_order_id=order['id'] if order != None else uuid.uuid4(),
-                open_order_status="open",
+                    open_order_id=order['id'] if order != None else uuid.uuid4(
+                    ),
+                    open_order_status="open",
 
-                open_price_requested=float(formatted_price),
-                open_date=datetime.now(),
+                    open_price_requested=float(formatted_price),
+                    open_date=datetime.now(),
 
-                initial_stop_loss=stop_loss,
-                current_stop_loss=stop_loss,
-                take_profit=take_profit,
-            )
+                    initial_stop_loss=stop_loss,
+                    current_stop_loss=stop_loss,
+                    take_profit=take_profit,
+                )
+            else:
+                Trade.create(
+                    exchange=self._exchange_name,
+                    symbol=symbol,
+                    strategy=self._strategy.strategy_params['id'],
+                    timeframe=self._strategy.timeframe,
+                    is_long=is_long,
+
+                    amount_requested=float(formatted_amount),
+                    amount_available=(1 - trading_fee_rate) *
+                    float(formatted_amount),
+
+                    open_order_id=uuid.uuid4(),
+                    open_order_status="closed",
+
+                    open_price_requested=float(formatted_price),
+                    open_price=float(formatted_price),
+                    open_fee_rate=trading_fee_rate,
+                    open_fee=trading_fee_rate *
+                    float(formatted_amount) * float(formatted_price),
+                    open_cost=float(formatted_price) * float(formatted_amount),
+                    open_date=datetime.now(),
+
+                    initial_stop_loss=stop_loss,
+                    current_stop_loss=stop_loss,
+                    take_profit=take_profit,
+                )
             print(
                 f"\033[32mOPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m")
         except ccxt.InsufficientFunds as e:
@@ -156,17 +184,37 @@ class Binance(Exchange):
             if (self._config['paper_mode'] == False):
                 order = await self._api.create_limit_sell_order(
                     symbol, formatted_amount, formatted_price, params=self._params)
+                Trade.update(
+                    close_order_id=order['id'] if order != None else uuid.uuid4(
+                    ),
+                    close_order_status="open",
 
-            Trade.update(
-                close_order_id=order['id'] if order != None else uuid.uuid4(),
-                close_order_status="open",
+                    close_price_requested=formatted_price,
 
-                close_price_requested=formatted_price,
+                    close_date=datetime.now(),
 
-                close_date=datetime.now(),
+                    sell_reason=reason,
+                ).where(Trade.open_order_id == trade[0].open_order_id).execute()
+            else:
+                close_return = (float(formatted_price) *
+                                float(formatted_amount) * (1 - trading_fee_rate))
+                Trade.update(
+                    close_order_id=uuid.uuid4(),
+                    close_order_status="closed",
 
-                sell_reason=reason,
-            ).where(Trade.open_order_id == trade[0].open_order_id).execute()
+                    close_price_requested=formatted_price,
+                    close_price=float(formatted_price),
+                    close_fee_rate=trading_fee_rate,
+                    close_fee=(trading_fee_rate * float(trade[0].amount_available)
+                               * float(formatted_price)),
+                    close_return=close_return,
+                    close_date=datetime.now(),
+
+                    profit=close_return - trade[0].open_cost,
+                    profit_pct=(close_return / trade[0].open_cost) - 1,
+
+                    sell_reason=reason,
+                ).where(Trade.open_order_id == trade[0].open_order_id).execute()
             print(
                 f"\033[31mOPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]\033[39m")
         except ccxt.InsufficientFunds as e:
