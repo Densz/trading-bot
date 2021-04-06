@@ -52,10 +52,16 @@ class Binance(Exchange):
     # ✅
     async def get_tradable_balance(self):
         open_orders_allocated_amount = self._db.get_used_amount()
-        balance_available_in_broker = await self.get_balance(self._strategy.main_currency)
         amount_allocated_to_strat = self._strategy.amount_allocated
+
+        if (self._config['paper_mode'] == True):
+            return amount_allocated_to_strat - open_orders_allocated_amount
+
+        balance_available_in_broker = await self.get_balance(self._strategy.main_currency)
+
         if (amount_allocated_to_strat >= balance_available_in_broker):
             return balance_available_in_broker - open_orders_allocated_amount
+
         return amount_allocated_to_strat - open_orders_allocated_amount
 
     # ✅
@@ -95,23 +101,23 @@ class Binance(Exchange):
                 strategy=self._strategy.strategy_params['id'],
                 timeframe=self._strategy.timeframe,
                 is_long=is_long,
-                amount=formatted_amount,
+
+                amount_requested=float(formatted_amount),
+                amount_available=(1 - trading_fee_rate) *
+                float(formatted_amount),
+
                 open_order_id=order['id'] if order != None else uuid.uuid4(),
-                open_order_status=order['status'] if order != None else "closed",
-                open_price_requested=formatted_price,
-                open_price=(order['price'] * (1 - trading_fee_rate)) if order != None else (float(formatted_price) * (
-                    1 - trading_fee_rate)),
-                open_fee_rate=trading_fee_rate,
-                open_fee=(order['price'] * trading_fee_rate) if order != None else float(
-                    formatted_price) * trading_fee_rate,
+                open_order_status="open",
+
+                open_price_requested=float(formatted_price),
                 open_date=datetime.now(),
+
                 initial_stop_loss=stop_loss,
                 current_stop_loss=stop_loss,
                 take_profit=take_profit,
-                open_cost=amount * price if order == None else None
             )
             print(
-                f"\033[32mCREATE BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m")
+                f"\033[32mOPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m")
         except ccxt.InsufficientFunds as e:
             print('create_buy_order() failed – not enough funds')
             print(e)
@@ -143,17 +149,8 @@ class Binance(Exchange):
         try:
             trading_fee_rate = self.get_trading_fees()
             formatted_amount = self._api.amount_to_precision(
-                symbol, trade[0].amount)
+                symbol, trade[0].amount_available)
             formatted_price = self._api.price_to_precision(symbol, price)
-            close_cost = float(formatted_amount) * float(formatted_price)
-            profit = 0
-            profit_pct = 0
-            if (trade[0].is_long == True):
-                profit = close_cost - trade[0].open_cost
-                profit_pct = (close_cost / trade[0].open_cost) - 1
-            else:
-                profit = trade[0].open_cost - close_cost
-                profit_pct = (trade[0].open_cost / close_cost) - 1
 
             order = None
             if (self._config['paper_mode'] == False):
@@ -162,21 +159,16 @@ class Binance(Exchange):
 
             Trade.update(
                 close_order_id=order['id'] if order != None else uuid.uuid4(),
-                close_order_status=order['status'] if order != None else "closed",
+                close_order_status="open",
+
                 close_price_requested=formatted_price,
-                close_price=(order['price'] * (1 - trading_fee_rate)) if order != None else (float(formatted_price) * (
-                    1 - trading_fee_rate)),
-                close_fee_rate=trading_fee_rate,
-                close_fee=(order['price'] * trading_fee_rate) if order != None else float(
-                    formatted_price) * trading_fee_rate,
+
                 close_date=datetime.now(),
+
                 sell_reason=reason,
-                close_cost=close_cost if order == None else None,
-                profit=profit if order == None else None,
-                profit_pct=profit_pct if order == None else None,
             ).where(Trade.open_order_id == trade[0].open_order_id).execute()
             print(
-                f"\033[31mCREATE SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}], Profit: [${profit:.2f}], Profit %: [{profit_pct:.3f}%]\033[39m")
+                f"\033[31mOPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]\033[39m")
         except ccxt.InsufficientFunds as e:
             print('create_sell_order() failed – not enough funds')
             print(e)
@@ -223,6 +215,9 @@ class Binance(Exchange):
     async def check_pending_orders(self) -> None:
         if (self._config['paper_mode'] == True):
             return
+
+        trading_fee_rate = self.get_trading_fees()
+
         try:
             # Check open_order_status orders
             data = Trade.select().where(Trade.open_order_status == 'open').execute()
@@ -231,7 +226,13 @@ class Binance(Exchange):
                 if (order_detail['status'] == 'closed'):
                     Trade.update(open_order_status=order_detail['status'],
                                  open_cost=order_detail['cost'],
+                                 open_fee_rate=trading_fee_rate,
+                                 open_price=order_detail['average'],
+                                 open_fee=(
+                                     (trading_fee_rate * order_detail['amount']) * order_detail['average'])
                                  ).where(Trade.open_order_id == row.open_order_id).execute()
+                    print(
+                        f"\033[32m ✅ EXECUTED BUY ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}]\033[39m")
         except Exception as e:
             print('check_pending_orders() for buy orders failed')
             print(e)
@@ -245,16 +246,24 @@ class Binance(Exchange):
                     profit = 0
                     profit_pct = 0
                     if (row.is_long == True):
-                        profit = order_detail['cost'] - row.open_cost
-                        profit_pct = (order_detail['cost'] / row.open_cost) - 1
+                        close_return = order_detail['cost'] * \
+                            (1 - trading_fee_rate)
+                        profit = close_return - row.open_cost
+                        profit_pct = (close_return / row.open_cost) - 1
                     else:
-                        profit = row.open_cost - order_detail['cost']
-                        profit_pct = (row.open_cost / order_detail['cost']) - 1
-                    Trade.update(close_order_status=order_detail['status'],
-                                 close_cost=order_detail['cost'],
+                        profit = row.open_cost - close_return
+                        profit_pct = (row.open_cost / close_return) - 1
+                    Trade.update(close_order_status='closed',
+                                 close_price=order_detail['average'],
+                                 close_fee_rate=trading_fee_rate,
+                                 close_fee=order_detail['cost'] *
+                                 trading_fee_rate,
+                                 close_return=close_return,
                                  profit=profit,
                                  profit_pct=profit_pct,
                                  ).where(Trade.open_order_id == row.open_order_id).execute()
+                    print(
+                        f"\033[32m ✅ EXECUTED SELL ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}], Profit [{profit:.2f} USDT], Profit [{profit_pct:.2f}%]\033[39m")
         except Exception as e:
             print('check_pending_orders() for sell orders failed')
             print(e)

@@ -30,12 +30,14 @@ class Worker:
 
     # ✅
     async def _run_bot(self):
-        balance = await self._exchange.get_balance(self._strategy.main_currency)
         tradable_balance = await self._exchange.get_tradable_balance()
         print(
-            f"[BALANCE ON BINANCE] {balance:.2f} {self._strategy.main_currency}")
-        print(
-            f"[TRADABLE BALANCE] {tradable_balance: .2f} {self._strategy.main_currency}")
+            f"[TRADABLE BALANCE] {tradable_balance:.2f} {self._strategy.main_currency}")
+
+        if (self._config['paper_mode'] == False):
+            balance = await self._exchange.get_balance(self._strategy.main_currency)
+            print(
+                f"[BALANCE ON BINANCE] {balance:.2f} {self._strategy.main_currency}")
         try:
             if (hasattr(self._exchange, "check_pending_orders")):
                 await self._exchange.check_pending_orders()

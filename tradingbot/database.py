@@ -16,8 +16,8 @@ class Database:
 
         db.connect()
         try:
-            # if (config['paper_mode'] == True):
-            #     db.drop_tables([Trade])
+            if (config['paper_mode'] == True):
+                db.drop_tables([Trade])
             db.create_tables([Trade])
         except:
             pass
@@ -67,6 +67,8 @@ class Database:
         ).execute()
         if (len(open_orders) == 0):
             return 0
+        if (open_orders[0].sum == None):
+            return 0
         return open_orders[0].sum
 
 
@@ -79,13 +81,14 @@ class Trade(pw.Model):
 
     is_long = pw.BooleanField(default=True)
 
-    amount = pw.FloatField(null=False)
+    amount_requested = pw.FloatField(null=False)
+    amount_available = pw.FloatField(null=False)
 
     open_order_id = pw.CharField(null=False, unique=True)
     open_order_status = pw.CharField(null=False, default="open")
-    open_price_requested = pw.FloatField(null=True)
+    open_price_requested = pw.FloatField(null=False)
     open_price = pw.FloatField(null=True)
-    open_fee_rate = pw.FloatField(default=0.001)
+    open_fee_rate = pw.FloatField(null=True)
     open_fee = pw.FloatField(null=True)
     open_date = pw.DateTimeField(null=False)
     open_cost = pw.FloatField(null=True)
@@ -94,10 +97,10 @@ class Trade(pw.Model):
     close_order_status = pw.CharField(null=True)
     close_price_requested = pw.FloatField(null=True)
     close_price = pw.FloatField(null=True)
-    close_fee_rate = pw.FloatField(default=0.001)
+    close_fee_rate = pw.FloatField(null=True)
     close_fee = pw.FloatField(null=True)
     close_date = pw.DateTimeField(null=True)
-    close_cost = pw.FloatField(null=True)
+    close_return = pw.FloatField(null=True)
 
     initial_stop_loss = pw.FloatField(null=True, default=0.0)
     current_stop_loss = pw.FloatField(null=True, default=0.0)
