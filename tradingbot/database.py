@@ -55,6 +55,20 @@ class Database:
             return None
         return open_orders
 
+    def get_used_amount(self):
+        amount = 0
+        open_orders = Trade.select(pw.fn.SUM(Trade.open_cost).alias('sum')).where(
+            Trade.exchange == self._config['exchange'],
+            Trade.timeframe == self._strategy.timeframe,
+            Trade.strategy == self._strategy.strategy_params['id'],
+            ((Trade.open_order_status == 'closed')
+             | (Trade.open_order_status == 'open')),
+            Trade.close_order_status == None,
+        ).execute()
+        if (len(open_orders) == 0):
+            return 0
+        return open_orders[0].sum
+
 
 class Trade(pw.Model):
     exchange = pw.CharField(default='binance')

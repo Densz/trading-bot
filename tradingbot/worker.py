@@ -31,7 +31,11 @@ class Worker:
     # ✅
     async def _run_bot(self):
         balance = await self._exchange.get_balance(self._strategy.main_currency)
-        # print("[AVAILABLE BALANCE]", balance, self._strategy.main_currency)
+        tradable_balance = await self._exchange.get_tradable_balance()
+        print(
+            f"[BALANCE ON BINANCE] {balance:.2f} {self._strategy.main_currency}")
+        print(
+            f"[TRADABLE BALANCE] {tradable_balance: .2f} {self._strategy.main_currency}")
         try:
             if (hasattr(self._exchange, "check_pending_orders")):
                 await self._exchange.check_pending_orders()
@@ -61,6 +65,6 @@ class Worker:
         await self._run_bot()
         time_passed = time.time() - self._last_throttle_time
         sleep_duration = max(THROTTLE_SECS - time_passed, 0.0)
-        # print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
-        #       f"last iteration took {time_passed:.2f}s.")
+        print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
+              f"last iteration took {time_passed:.2f}s.")
         time.sleep(sleep_duration)

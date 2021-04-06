@@ -50,6 +50,15 @@ class Binance(Exchange):
         return balances[currency]
 
     # ✅
+    async def get_tradable_balance(self):
+        open_orders_allocated_amount = self._db.get_used_amount()
+        balance_available_in_broker = await self.get_balance(self._strategy.main_currency)
+        amount_allocated_to_strat = self._strategy.amount_allocated
+        if (amount_allocated_to_strat >= balance_available_in_broker):
+            return balance_available_in_broker - open_orders_allocated_amount
+        return amount_allocated_to_strat - open_orders_allocated_amount
+
+    # ✅
     async def create_buy_order(
         self, symbol: str,
         amount: float,
@@ -59,14 +68,19 @@ class Binance(Exchange):
         is_long=True,
     ):
         open_trade = self._db.has_trade_open(symbol=symbol)
+        tradable_balance = await self.get_tradable_balance()
+
         if (open_trade != None):
             print(
                 '\033[31mCould not create order, a trade already exists and is not closed yet\033[39m')
             return False
-
+        if (amount * price > tradable_balance):
+            print('\033[31mCould not create order insufficient funds\033[39m')
+            return False
         if (amount * price < 10):
             print('\033[31mCould not create order less than 10 USDT\033[39m')
             return False
+
         try:
             trading_fee_rate = self.get_trading_fees()
             formatted_amount = self._api.amount_to_precision(symbol, amount)
@@ -109,7 +123,7 @@ class Binance(Exchange):
         return True
 
     # ✅
-    async def create_sell_order(self, symbol: str, price: float, trade_id: Optional[int] = None, reason: str = ''):
+    async def create_sell_order(self, symbol: str, price: float, trade_id: Optional[int] = None, reason: str = '') -> bool:
         trade = None
         if (trade_id):
             trade = Trade.select().where(Trade.symbol == symbol,
@@ -185,26 +199,25 @@ class Binance(Exchange):
     async def close_connection(self):
         await self._api.close()
 
+    # ✅
     async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
         open_orders = self._db.get_open_orders(symbol=symbol)
 
         if (open_orders == None):
             return
-        # print("Open orders ===>")
         for order in open_orders:
-            # All fields in db
-            # pprint(dir(order))
-            """
-            {'baseVolume': 2020700362.0,
-            'close': 0.0582203,
-            'high': 0.0592851,
-            'low': 0.0561885,
-            'open': 0.0564656,
-            'symbol': 'DOGE/USDT'}
-            """
-            pprint(ohlc)
-
-        pass
+            if (ohlc['close'] <= order.initial_stop_loss):
+                self.create_sell_order(
+                    symbol=order.symbol, price=ohlc['close'], trade_id=order.id, reason="Stoploss")
+                return
+            if (ohlc['close'] <= order.current_stop_loss):
+                self.create_sell_order(
+                    symbol=order.symbol, price=ohlc['close'], trade_id=order.id, reason="Ajusted stoploss")
+                return
+            if (ohlc['close'] >= order.take_profit):
+                self.create_sell_order(
+                    symbol=order.symbol, price=ohlc['close'], trade_id=order.id, reason="Takeprofit")
+                return
 
     # ✅
     async def check_pending_orders(self) -> None:
