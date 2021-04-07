@@ -1,3 +1,4 @@
+from tradingbot.telegram import Telegram
 from tradingbot.exchange.binance import Binance
 from tradingbot.database import Database
 from pandas.core.frame import DataFrame
@@ -31,10 +32,13 @@ class Strategy:
         "rsi_high_level": 70,
     }
 
-    def __init__(self, exchange: Binance, database: Database) -> None:
+    def __init__(
+        self, exchange: Binance, database: Database, telegram: Telegram
+    ) -> None:
         print(f"\033[34m[STRATEGY] {self.strategy_params['id']}", "\033[39m")
         self._exchange = exchange
         self._database = database
+        self._telegram = telegram
         pass
 
     def _add_indicators(self, df: DataFrame) -> DataFrame:

@@ -16,18 +16,17 @@ class Binance(Exchange):
         Exchange.__init__(self, config, database, strategy)
 
         self._exchange_name = "binance"
-
         self._api: ccxt.binance = ccxt.binance({**config["binance"]})
+        self._params = {"test": config["paper_mode"]}  # ccxt params for making calls
+
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
-        # ccxt params for making calls
-        self._params = {"test": config["paper_mode"]}
 
     # ✅
     async def fetch_current_ohlcv(self, tick: str):
         # print(self._api.iso8601(self._api.milliseconds()),
         #       'fetching', tick, 'ticker from', self._api.name)
         tick_info = await self._api.fetch_ticker(tick)
-        current_tick: Tick = {
+        current_tick = {
             "symbol": tick_info["symbol"],
             "high": tick_info["high"],
             "low": tick_info["low"],

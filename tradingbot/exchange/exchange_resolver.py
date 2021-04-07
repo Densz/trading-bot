@@ -1,3 +1,4 @@
+from tradingbot.telegram import Telegram
 from strategies.main import Strategy
 from tradingbot.database import Database
 import tradingbot.exchange as Exchanges
@@ -8,7 +9,10 @@ AVAILABLE_EXCHANGE = ["binance", "oanda"]
 class ExchangeResolver:
     @staticmethod
     def load_exchange(
-        exchange_name: str, config, database: Database, strategy: Strategy
+        exchange_name: str,
+        config,
+        database: Database,
+        strategy: Strategy,
     ):
         exchange = None
 

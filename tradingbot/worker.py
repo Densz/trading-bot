@@ -1,5 +1,6 @@
 import time
 import asyncio
+from tradingbot.telegram import Telegram
 import ccxt
 from pandas.core.frame import DataFrame
 from tradingbot.types import Tick
@@ -16,11 +17,14 @@ THROTTLE_SECS = 5  # sec
 
 
 class Worker:
-    def __init__(self, config, exchange: Exchange, database: Database) -> None:
+    def __init__(
+        self, config, exchange: Exchange, database: Database, telegram: Telegram
+    ) -> None:
         self._exchange = exchange
         self._database = database
         self._config = config
-        self._strategy = Strategy(exchange, database)
+        self._telegram = telegram
+        self._strategy = Strategy(exchange, database, telegram)
         self._last_throttle_time = 0
 
     # ✅
