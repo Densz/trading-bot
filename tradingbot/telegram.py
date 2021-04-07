@@ -10,6 +10,8 @@ class Telegram:
         self._dispatcher = self._updater.dispatcher
 
         self._init_keyboard()
+        self._add_handler()
+
         self._updater.start_polling()
 
     def _init_keyboard(self) -> None:
@@ -27,7 +29,6 @@ class Telegram:
             disable_notification=True,
         )
 
-    @abstractmethod
     def send_message(self, msg: str) -> None:
         if self._config["telegram"]["enabled"] == True:
             self._updater.bot.send_message(
@@ -35,6 +36,38 @@ class Telegram:
                 text=msg,
                 disable_notification=True,
             )
+
+    def _add_handler(self):
+        handlers = [
+            CommandHandler("help", self._help),
+            CommandHandler("status", self._status),
+            CommandHandler("profit", self._profit),
+            CommandHandler("daily", self._daily),
+            CommandHandler("balance", self._balance),
+            CommandHandler("forcesell", self._forcesell),
+        ]
+        for handler in handlers:
+            self._dispatcher.add_handler(handler)
+
+    def _help(self, update, context) -> None:
+        self.send_message(
+            "Available commands:\n/status to get all trades status\n/profit get total profit since the start\n/daily get daily profit\n/balance get current balance in USDT\n/forcesell [ID] sell an open order\n"
+        )
+
+    def _status(self, update, context) -> None:
+        self.send_message("/status not implemented yet")
+
+    def _profit(self, update, context) -> None:
+        self.send_message("/profit not implemented yet")
+
+    def _daily(self, update, context) -> None:
+        self.send_message("/daily not implemented yet")
+
+    def _balance(self, update, context) -> None:
+        self.send_message("/balance not implemented yet")
+
+    def _forcesell(self, update, context) -> None:
+        self.send_message("/forcesell not implemented yet")
 
     def clean(self) -> None:
         self._updater.stop()

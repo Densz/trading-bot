@@ -1,5 +1,6 @@
 from os import close
 from pprint import pprint
+from tradingbot.types import Tick
 from typing import Optional
 import ccxt.async_support as ccxt
 import pandas as pd
@@ -22,11 +23,11 @@ class Binance(Exchange):
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
 
     # ✅
-    async def fetch_current_ohlcv(self, tick: str):
+    async def fetch_current_ohlcv(self, tick: str) -> Tick:
         # print(self._api.iso8601(self._api.milliseconds()),
         #       'fetching', tick, 'ticker from', self._api.name)
         tick_info = await self._api.fetch_ticker(tick)
-        current_tick = {
+        current_tick: Tick = {
             "symbol": tick_info["symbol"],
             "high": tick_info["high"],
             "low": tick_info["low"],

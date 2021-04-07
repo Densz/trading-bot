@@ -14,10 +14,10 @@ from strategies.main import Strategy
 def main() -> None:
     config = get_config()
     database = Database(config, Strategy)
-    telegram = Telegram(config)
     exchange = ExchangeResolver.load_exchange(
         config["exchange"], config, database, Strategy
     )
+    telegram = Telegram(config)
     worker = Worker(config, exchange, database, telegram)
 
     try:
