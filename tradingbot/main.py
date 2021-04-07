@@ -10,15 +10,11 @@ from strategies.main import Strategy
 
 def main() -> None:
     config = get_config()
-    mode = "PAPER MODE" if config['paper_mode'] else "LIVE MODE"
-    print(
-        f"\033[36m==== 🚀 Starting trading bot ({mode}) 🚀 ====\033[39m")
+    mode = "PAPER MODE" if config["paper_mode"] else "LIVE MODE"
+    print(f"\033[36m==== 🚀 Starting trading bot ({mode}) 🚀 ====\033[39m")
     database = Database(config, Strategy)
     exchange = ExchangeResolver.load_exchange(
-        config['exchange'],
-        config,
-        database,
-        Strategy
+        config["exchange"], config, database, Strategy
     )
     worker = Worker(config, exchange, database)
 
@@ -28,9 +24,8 @@ def main() -> None:
         print("Oops! An error occured")
     finally:
         asyncio.get_event_loop().run_until_complete(exchange.close_connection())
-        print(
-            f"\033[36m==== ⛔ Stop trading bot ({mode}) ⛔ ====\033[39m")
+        print(f"\033[36m==== ⛔ Stop trading bot ({mode}) ⛔ ====\033[39m")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

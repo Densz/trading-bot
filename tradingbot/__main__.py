@@ -6,5 +6,5 @@ To launch Tradingbot as a module
 
 from tradingbot import main
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main.main()

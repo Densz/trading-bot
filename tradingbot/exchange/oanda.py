@@ -22,7 +22,8 @@ class Oanda(Exchange):
         pass
 
     async def create_buy_order(
-        self, symbol: str,
+        self,
+        symbol: str,
         amount: float,
         price: Optional[float] = None,
         stop_loss: Optional[float] = None,

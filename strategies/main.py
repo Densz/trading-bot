@@ -6,28 +6,29 @@ import talib.abstract as ta
 from pprint import pprint
 
 
-class Strategy():
-    main_currency = 'USDT'
+class Strategy:
+    main_currency = "USDT"
     amount_allocated = 1000
 
     timeframe = "1m"
-    tickers = ["DOGE/USDT"
-               #    "DOGE/USDT",
-               #    "DOT/USDT",
-               #    "LINK/USDT",
-               #    "LTC/USDT",
-               #    "BCH/USDT",
-               #    "ATOM/USDT",
-               #    "SXP/USDT",
-               #    "BTC/USDT"
-               ]
+    tickers = [
+        "DOGE/USDT"
+        #    "DOGE/USDT",
+        #    "DOT/USDT",
+        #    "LINK/USDT",
+        #    "LTC/USDT",
+        #    "BCH/USDT",
+        #    "ATOM/USDT",
+        #    "SXP/USDT",
+        #    "BTC/USDT"
+    ]
 
     # For backtesting will save the params in DB
     # Could be useful for machine learning testing best parameters for better results
     strategy_params = {
-        'id': 'Bollinger bands strategy',  # Should always be here
-        'rsi_lower_level': 30,
-        'rsi_high_level': 70
+        "id": "Bollinger bands strategy",  # Should always be here
+        "rsi_lower_level": 30,
+        "rsi_high_level": 70,
     }
 
     def __init__(self, exchange: Binance, database: Database) -> None:
@@ -40,11 +41,11 @@ class Strategy():
         df["RSI"] = ta.RSI(df["close"])
 
         macd = ta.MACD(df, window_fast=12, window_slow=26)
-        df['macd'] = macd['macd']
-        df['macdsignal'] = macd['macdsignal']
-        df['macdhist'] = macd['macdhist']
+        df["macd"] = macd["macd"]
+        df["macdsignal"] = macd["macdsignal"]
+        df["macdhist"] = macd["macdhist"]
 
-        df['sma200'] = ta.SMA(df, timeperiod=200)
+        df["sma200"] = ta.SMA(df, timeperiod=200)
 
         return df
 
@@ -52,35 +53,32 @@ class Strategy():
         print("\033[34m---> Tick: ", tick["symbol"], "\033[39m")
         df = self._add_indicators(df)
         limit = 10.5  # USDT
-        amount = limit / tick['close']
-        open_trade = self._database.has_trade_open(
-            symbol=tick['symbol'])
-        last_candle = df.tail(1).to_dict('records')[0]
-        print("RSI ->", str(last_candle['RSI']))
+        amount = limit / tick["close"]
+        open_trade = self._database.has_trade_open(symbol=tick["symbol"])
+        last_candle = df.tail(1).to_dict("records")[0]
+        print("RSI ->", str(last_candle["RSI"]))
         print("open_trade ->", open_trade != None)
 
-        if (last_candle['RSI'] > 50 and last_candle['RSI'] < 55):
+        if last_candle["RSI"] > 50 and last_candle["RSI"] < 55:
             print("Between 50 & 55")
 
         # There is no open trade
-        if (open_trade == None):
-            if (last_candle['RSI'] < 10):
+        if open_trade == None:
+            if last_candle["RSI"] < 10:
                 print("RSI under 10")
                 await self._exchange.create_buy_order(
-                    symbol=tick['symbol'],
+                    symbol=tick["symbol"],
                     amount=amount,
-                    price=tick['close'],
-                    stop_loss=tick['close'] * 0.95,
-                    take_profit=tick['close'] * 1.05
+                    price=tick["close"],
+                    stop_loss=tick["close"] * 0.95,
+                    take_profit=tick["close"] * 1.05,
                 )
         # When there is open trade
         else:
-            if (last_candle['RSI'] > 90):
+            if last_candle["RSI"] > 90:
                 print("RSI over 55")
                 await self._exchange.create_sell_order(
-                    symbol=tick['symbol'],
-                    price=tick['close'],
-                    reason="RSI OVER 55"
+                    symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"
                 )
         pass
 

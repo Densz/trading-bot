@@ -32,14 +32,14 @@ class Worker:
     async def _run_bot(self):
         tradable_balance = await self._exchange.get_tradable_balance()
         print(
-            f"[TRADABLE BALANCE] {tradable_balance:.2f} {self._strategy.main_currency}")
+            f"[TRADABLE BALANCE] {tradable_balance:.2f} {self._strategy.main_currency}"
+        )
 
-        if (self._config['paper_mode'] == False):
+        if self._config["paper_mode"] == False:
             balance = await self._exchange.get_balance(self._strategy.main_currency)
-            print(
-                f"[BALANCE ON BINANCE] {balance:.2f} {self._strategy.main_currency}")
+            print(f"[BALANCE ON BINANCE] {balance:.2f} {self._strategy.main_currency}")
         try:
-            if (hasattr(self._exchange, "check_pending_orders")):
+            if hasattr(self._exchange, "check_pending_orders"):
                 await self._exchange.check_pending_orders()
 
             tickers = self._strategy.tickers
@@ -47,13 +47,17 @@ class Worker:
 
             for tick in tickers:
                 tick_details = await self._exchange.fetch_current_ohlcv(tick)
-                dataframe: DataFrame = await self._exchange.fetch_historic_ohlcv(tick, timeframe)
+                dataframe: DataFrame = await self._exchange.fetch_historic_ohlcv(
+                    tick, timeframe
+                )
                 # Always remove the last row of the dataframe otherwise
                 # the last candle won't be a finished candle
                 dataframe = dataframe[:-1]
 
-                if (hasattr(self._exchange, "trigger_stoploss_takeprofit")):
-                    await self._exchange.trigger_stoploss_takeprofit(symbol=tick_details['symbol'], ohlc=tick_details)
+                if hasattr(self._exchange, "trigger_stoploss_takeprofit"):
+                    await self._exchange.trigger_stoploss_takeprofit(
+                        symbol=tick_details["symbol"], ohlc=tick_details
+                    )
 
                 await self._strategy.on_tick(dataframe, tick_details)
 
@@ -67,6 +71,8 @@ class Worker:
         await self._run_bot()
         time_passed = time.time() - self._last_throttle_time
         sleep_duration = max(THROTTLE_SECS - time_passed, 0.0)
-        print(f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
-              f"last iteration took {time_passed:.2f}s.")
+        print(
+            f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
+            f"last iteration took {time_passed:.2f}s."
+        )
         time.sleep(sleep_duration)

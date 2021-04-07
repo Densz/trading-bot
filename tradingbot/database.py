@@ -5,8 +5,7 @@ from tradingbot.config import get_config
 
 config = get_config()
 
-db = pw.SqliteDatabase('sandbox.db' if config['paper_mode'] ==
-                       True else 'live.db')
+db = pw.SqliteDatabase("sandbox.db" if config["paper_mode"] == True else "live.db")
 
 
 class Database:
@@ -16,23 +15,29 @@ class Database:
 
         db.connect()
         try:
-            if (config['paper_mode'] == True):
+            if config["paper_mode"] == True:
                 db.drop_tables([Trade])
             db.create_tables([Trade])
         except:
             pass
 
     def has_trade_open(self, symbol: str):
-        query = Trade.select().where(
-            Trade.symbol == symbol,
-            Trade.exchange == self._config['exchange'],
-            Trade.timeframe == self._strategy.timeframe,
-            Trade.strategy == self._strategy.strategy_params['id'],
-            ((Trade.open_order_status == 'open') |
-             (Trade.open_order_status == 'closed')),
-            Trade.close_order_status == None,
-        ).dicts()
-        if (len(query) >= 1):
+        query = (
+            Trade.select()
+            .where(
+                Trade.symbol == symbol,
+                Trade.exchange == self._config["exchange"],
+                Trade.timeframe == self._strategy.timeframe,
+                Trade.strategy == self._strategy.strategy_params["id"],
+                (
+                    (Trade.open_order_status == "open")
+                    | (Trade.open_order_status == "closed")
+                ),
+                Trade.close_order_status == None,
+            )
+            .dicts()
+        )
+        if len(query) >= 1:
             return query[0]
         return None
 
@@ -43,37 +48,47 @@ class Database:
         pass
 
     def get_open_orders(self, symbol: str):
-        open_orders = Trade.select().where(
-            Trade.symbol == symbol,
-            Trade.exchange == self._config['exchange'],
-            Trade.timeframe == self._strategy.timeframe,
-            Trade.strategy == self._strategy.strategy_params['id'],
-            Trade.open_order_status == 'closed',
-            Trade.close_order_status == None,
-        ).execute()
-        if (len(open_orders) == 0):
+        open_orders = (
+            Trade.select()
+            .where(
+                Trade.symbol == symbol,
+                Trade.exchange == self._config["exchange"],
+                Trade.timeframe == self._strategy.timeframe,
+                Trade.strategy == self._strategy.strategy_params["id"],
+                Trade.open_order_status == "closed",
+                Trade.close_order_status == None,
+            )
+            .execute()
+        )
+        if len(open_orders) == 0:
             return None
         return open_orders
 
     def get_used_amount(self):
         amount = 0
-        open_orders = Trade.select(pw.fn.SUM(Trade.open_cost).alias('sum')).where(
-            Trade.exchange == self._config['exchange'],
-            Trade.timeframe == self._strategy.timeframe,
-            Trade.strategy == self._strategy.strategy_params['id'],
-            ((Trade.open_order_status == 'closed')
-             | (Trade.open_order_status == 'open')),
-            Trade.close_order_status == None,
-        ).execute()
-        if (len(open_orders) == 0):
+        open_orders = (
+            Trade.select(pw.fn.SUM(Trade.open_cost).alias("sum"))
+            .where(
+                Trade.exchange == self._config["exchange"],
+                Trade.timeframe == self._strategy.timeframe,
+                Trade.strategy == self._strategy.strategy_params["id"],
+                (
+                    (Trade.open_order_status == "closed")
+                    | (Trade.open_order_status == "open")
+                ),
+                Trade.close_order_status == None,
+            )
+            .execute()
+        )
+        if len(open_orders) == 0:
             return 0
-        if (open_orders[0].sum == None):
+        if open_orders[0].sum == None:
             return 0
         return open_orders[0].sum
 
 
 class Trade(pw.Model):
-    exchange = pw.CharField(default='binance')
+    exchange = pw.CharField(default="binance")
 
     symbol = pw.CharField()
     strategy = pw.CharField(null=False)
