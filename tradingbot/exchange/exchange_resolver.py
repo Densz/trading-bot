@@ -1,4 +1,3 @@
-from tradingbot.telegram import Telegram
 from strategies.main import Strategy
 from tradingbot.database import Database
 import tradingbot.exchange as Exchanges
@@ -13,12 +12,13 @@ class ExchangeResolver:
         config,
         database: Database,
         strategy: Strategy,
+        bot,
     ):
         exchange = None
 
         AVAILABLE_EXCHANGE.index(exchange_name)
         exchange_class = getattr(Exchanges, exchange_name.title())
 
-        exchange = exchange_class(config, database, strategy)
+        exchange = exchange_class(config, database, strategy, bot)
 
         return exchange

@@ -4,10 +4,11 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 
 
 class Telegram:
-    def __init__(self, config) -> None:
+    def __init__(self, config, exchange) -> None:
         self._config = config
         self._updater = Updater(config["telegram"]["token"])
         self._dispatcher = self._updater.dispatcher
+        self._exchange = exchange
 
         self._init_keyboard()
         self._add_handler()

@@ -13,12 +13,13 @@ from tradingbot.database import Database, Trade
 
 
 class Binance(Exchange):
-    def __init__(self, config, database: Database, strategy) -> None:
+    def __init__(self, config, database: Database, strategy, bot) -> None:
         Exchange.__init__(self, config, database, strategy)
 
         self._exchange_name = "binance"
         self._api: ccxt.binance = ccxt.binance({**config["binance"]})
         self._params = {"test": config["paper_mode"]}  # ccxt params for making calls
+        self.bot = bot
 
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
 
