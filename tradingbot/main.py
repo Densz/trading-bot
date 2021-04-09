@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 
 from tradingbot.telegram import Telegram
 from tradingbot.config import get_config
@@ -30,6 +31,66 @@ class Bot:
         self.telegram.send_message("⛔ Stop trading bot ⛔")
         self.telegram.clean()
         print(f"\033[36m==== ⛔ Stop trading bot ⛔ ====\033[39m")
+
+    def notify_buy(
+        self,
+        exchange: str,
+        symbol: str,
+        amount: float,
+        open_rate: float,
+        stop_loss: Optional[float] = 0,
+        take_profit: Optional[float] = None,
+    ):
+        total_invested = amount * open_rate
+        template = [
+            [f"🔵 {exchange.title()}", f"Buying {symbol}\n"],
+            ["Amount", f"{amount}\n"],
+            ["Open rate", f"{open_rate}\n"],
+            ["Total", f"{total_invested:.2f} USDT\n"],
+            ["Stop loss price", f"{stop_loss}\n"],
+            ["Take profit price", f"{take_profit if take_profit != None else ''}"],
+        ]
+        msg = ""
+        terminal_msg = ""
+        for row in template:
+            msg += "<b>" + row[0] + ":</b> " + "<code>" + row[1] + "</code>"
+            terminal_msg += row[0] + ": " + row[1]
+        print("-------------------------")
+        print(terminal_msg)
+        print("-------------------------")
+        self.telegram.send_message(msg)
+
+    def notify_sell(
+        self,
+        exchange: str,
+        symbol: str,
+        amount: float,
+        open_rate: float,
+        current_rate: float,
+        close_rate: float,
+        reason: str,
+        profit: float = 0,
+        profit_pct: float = 0,
+    ):
+        template = [
+            [f"❌ {exchange.title()}", f"Selling {symbol}\n"],
+            ["Amount", f"{amount}\n"],
+            ["Open rate", f"{open_rate}\n"],
+            ["Current rate", f"{current_rate}\n"],
+            ["Close rate", f"{close_rate}\n"],
+            ["Reason", f"{reason}\n"],
+            ["Profit (%)", f"{profit_pct:.2f}%\n"],
+            ["Profit (USDT)", f"{profit:.2f} USDT"],
+        ]
+        msg = ""
+        terminal_msg = ""
+        for row in template:
+            msg += "<b>" + row[0] + ":</b> " + "<code>" + row[1] + "</code>"
+            terminal_msg += row[0] + ": " + row[1]
+        print("-------------------------")
+        print(terminal_msg)
+        print("-------------------------")
+        self.telegram.send_message(msg)
 
 
 def main() -> None:

@@ -1,6 +1,7 @@
 from abc import abstractmethod
-from telegram import ReplyKeyboardMarkup
-from telegram.ext import CallbackContext, CommandHandler, Updater
+from telegram import ReplyKeyboardMarkup, ParseMode
+from telegram.ext import CommandHandler, Updater
+from telegram.utils.helpers import mention_html
 
 
 class Telegram:
@@ -26,9 +27,10 @@ class Telegram:
         )
         self._updater.bot.send_message(
             chat_id=self.bot.config["telegram"]["chat_id"],
-            text=f"{'📄 PAPER_MODE' if self._is_paper_mode else '💵 LIVE MODE'} -> Bot is Trading !",
+            text=f"<b>🏃 Bot is Trading !</b> <code>{'[Paper mode]' if self._is_paper_mode else '[Live mode]'}</code>",
             reply_markup=reply_markup,
             disable_notification=True,
+            parse_mode=ParseMode.HTML,
         )
 
     def send_message(self, msg: str) -> None:
@@ -37,6 +39,7 @@ class Telegram:
                 chat_id=self.bot.config["telegram"]["chat_id"],
                 text=msg,
                 disable_notification=True,
+                parse_mode=ParseMode.HTML,
             )
 
     def _add_handler(self):

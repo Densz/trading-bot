@@ -1,5 +1,6 @@
 from os import close
 from pprint import pprint
+from tradingbot import exchange
 from tradingbot.types import Tick
 from typing import Optional
 import ccxt.async_support as ccxt
@@ -138,11 +139,13 @@ class Binance(Exchange):
                     current_stop_loss=stop_loss,
                     take_profit=take_profit,
                 )
-            print(
-                f"\033[32mOPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m"
-            )
-            self.bot.telegram.send_message(
-                f"OPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]"
+            self.bot.notify_buy(
+                exchange=self.bot.config["exchange"],
+                symbol=symbol,
+                amount=float(formatted_amount),
+                open_rate=float(formatted_price),
+                stop_loss=stop_loss,
+                take_profit=take_profit,
             )
         except ccxt.InsufficientFunds as e:
             print("create_buy_order() failed – not enough funds")
@@ -214,6 +217,8 @@ class Binance(Exchange):
                     * float(formatted_amount)
                     * (1 - trading_fee_rate)
                 )
+                profit = close_return - trade[0].open_cost
+                profit_pct = (close_return / trade[0].open_cost) - 1
                 Trade.update(
                     close_order_id=uuid.uuid4(),
                     close_order_status="closed",
@@ -227,15 +232,20 @@ class Binance(Exchange):
                     ),
                     close_return=close_return,
                     close_date=datetime.now(),
-                    profit=close_return - trade[0].open_cost,
-                    profit_pct=(close_return / trade[0].open_cost) - 1,
+                    profit=profit,
+                    profit_pct=profit_pct,
                     sell_reason=reason,
                 ).where(Trade.open_order_id == trade[0].open_order_id).execute()
-            print(
-                f"\033[31mOPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]\033[39m"
-            )
-            self.bot.telegram.send_message(
-                f"OPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]"
+            self.bot.notify_sell(
+                exchange=self.bot.config["exchange"],
+                symbol=symbol,
+                amount=trade[0].amount_requested,
+                open_rate=trade[0].open_price,
+                current_rate=price,
+                close_rate=price,
+                reason=reason,
+                profit=profit,
+                profit_pct=profit_pct,
             )
         except ccxt.InsufficientFunds as e:
             print("create_sell_order() failed – not enough funds")
