@@ -13,15 +13,14 @@ class Strategy:
 
     timeframe = "1m"
     tickers = [
-        "DOGE/USDT"
-        #    "DOGE/USDT",
-        #    "DOT/USDT",
-        #    "LINK/USDT",
-        #    "LTC/USDT",
-        #    "BCH/USDT",
-        #    "ATOM/USDT",
-        #    "SXP/USDT",
-        #    "BTC/USDT"
+        "DOGE/USDT",
+        "DOT/USDT",
+        "LINK/USDT",
+        "LTC/USDT",
+        "BCH/USDT",
+        "ATOM/USDT",
+        "SXP/USDT",
+        "BTC/USDT",
     ]
 
     # For backtesting will save the params in DB
@@ -68,7 +67,7 @@ class Strategy:
 
         # There is no open trade
         if open_trade == None:
-            if last_candle["RSI"] < 10:
+            if last_candle["RSI"] < 30:
                 print("RSI under 10")
                 await self._exchange.create_buy_order(
                     symbol=tick["symbol"],
@@ -79,7 +78,7 @@ class Strategy:
                 )
         # When there is open trade
         else:
-            if last_candle["RSI"] > 90:
+            if last_candle["RSI"] > 50:
                 print("RSI over 55")
                 await self._exchange.create_sell_order(
                     symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"

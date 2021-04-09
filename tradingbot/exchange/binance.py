@@ -13,14 +13,12 @@ from tradingbot.database import Database, Trade
 
 
 class Binance(Exchange):
-    def __init__(self, config, database: Database, strategy, bot) -> None:
-        Exchange.__init__(self, config, database, strategy)
-
-        self._exchange_name = "binance"
-        self._api: ccxt.binance = ccxt.binance({**config["binance"]})
-        self._params = {"test": config["paper_mode"]}  # ccxt params for making calls
+    def __init__(self, bot) -> None:
+        Exchange.__init__(self, bot)
         self.bot = bot
-
+        self._api: ccxt.binance = ccxt.binance({**self.bot.config["binance"]})
+        # ccxt params for making calls
+        self._params = {"test": self.bot.config["paper_mode"]}
         asyncio.get_event_loop().run_until_complete(self._api.load_markets())
 
     # ✅
@@ -52,14 +50,14 @@ class Binance(Exchange):
 
     # ✅
     async def get_tradable_balance(self):
-        open_orders_allocated_amount = self._db.get_used_amount()
-        amount_allocated_to_strat = self._strategy.amount_allocated
+        open_orders_allocated_amount = self.bot.database.get_used_amount()
+        amount_allocated_to_strat = self.bot.strategy.amount_allocated
 
-        if self._config["paper_mode"] == True:
+        if self.bot.config["paper_mode"] == True:
             return amount_allocated_to_strat - open_orders_allocated_amount
 
         balance_available_in_broker = await self.get_balance(
-            self._strategy.main_currency
+            self.bot.strategy.main_currency
         )
 
         if amount_allocated_to_strat >= balance_available_in_broker:
@@ -77,7 +75,7 @@ class Binance(Exchange):
         take_profit: Optional[float] = None,
         is_long=True,
     ):
-        open_trade = self._db.has_trade_open(symbol=symbol)
+        open_trade = self.bot.database.has_trade_open(symbol=symbol)
         tradable_balance = await self.get_tradable_balance()
 
         if open_trade != None:
@@ -97,15 +95,15 @@ class Binance(Exchange):
             formatted_amount = self._api.amount_to_precision(symbol, amount)
             formatted_price = self._api.price_to_precision(symbol, price)
             order = None
-            if self._config["paper_mode"] == False:
+            if self.bot.config["paper_mode"] == False:
                 order = await self._api.create_limit_buy_order(
                     symbol, formatted_amount, formatted_price, params=self._params
                 )
                 Trade.create(
-                    exchange=self._exchange_name,
+                    exchange=self.bot.config["exchange"],
                     symbol=symbol,
-                    strategy=self._strategy.strategy_params["id"],
-                    timeframe=self._strategy.timeframe,
+                    strategy=self.bot.strategy.strategy_params["id"],
+                    timeframe=self.bot.strategy.timeframe,
                     is_long=is_long,
                     amount_requested=float(formatted_amount),
                     amount_available=((1 - trading_fee_rate) * float(formatted_amount)),
@@ -119,10 +117,10 @@ class Binance(Exchange):
                 )
             else:
                 Trade.create(
-                    exchange=self._exchange_name,
+                    exchange=self.bot.config["exchange"],
                     symbol=symbol,
-                    strategy=self._strategy.strategy_params["id"],
-                    timeframe=self._strategy.timeframe,
+                    strategy=self.bot.strategy.strategy_params["id"],
+                    timeframe=self.bot.strategy.timeframe,
                     is_long=is_long,
                     amount_requested=float(formatted_amount),
                     amount_available=(1 - trading_fee_rate) * float(formatted_amount),
@@ -142,6 +140,9 @@ class Binance(Exchange):
                 )
             print(
                 f"\033[32mOPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]\033[39m"
+            )
+            self.bot.telegram.send_message(
+                f"OPEN BUY ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}]"
             )
         except ccxt.InsufficientFunds as e:
             print("create_buy_order() failed – not enough funds")
@@ -196,7 +197,7 @@ class Binance(Exchange):
             formatted_price = self._api.price_to_precision(symbol, price)
 
             order = None
-            if self._config["paper_mode"] == False:
+            if self.bot.config["paper_mode"] == False:
                 order = await self._api.create_limit_sell_order(
                     symbol, formatted_amount, formatted_price, params=self._params
                 )
@@ -233,6 +234,9 @@ class Binance(Exchange):
             print(
                 f"\033[31mOPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]\033[39m"
             )
+            self.bot.telegram.send_message(
+                f"OPEN SELL ORDER: Symbol: [{symbol}], Asked price [{formatted_price}], Asked amount [{formatted_amount}], Reason: [{reason}]"
+            )
         except ccxt.InsufficientFunds as e:
             print("create_sell_order() failed – not enough funds")
             print(e)
@@ -257,7 +261,7 @@ class Binance(Exchange):
 
     # ✅
     async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
-        open_orders = self._db.get_open_orders(symbol=symbol)
+        open_orders = self.bot.database.get_open_orders(symbol=symbol)
 
         if open_orders == None:
             return
@@ -289,7 +293,7 @@ class Binance(Exchange):
 
     # ✅
     async def check_pending_orders(self) -> None:
-        if self._config["paper_mode"] == True:
+        if self.bot.config["paper_mode"] == True:
             return
 
         trading_fee_rate = self.get_trading_fees()

@@ -9,14 +9,13 @@ db = pw.SqliteDatabase("sandbox.db" if config["paper_mode"] == True else "live.d
 
 
 class Database:
-    def __init__(self, config, strategy):
-        self._config = config
-        self._strategy = strategy
+    def __init__(self, bot):
+        self.bot = bot
 
         db.connect()
         try:
-            if config["paper_mode"] == True:
-                db.drop_tables([Trade])
+            # if config["paper_mode"] == True:
+            #     db.drop_tables([Trade])
             db.create_tables([Trade])
         except:
             pass
@@ -26,9 +25,9 @@ class Database:
             Trade.select()
             .where(
                 Trade.symbol == symbol,
-                Trade.exchange == self._config["exchange"],
-                Trade.timeframe == self._strategy.timeframe,
-                Trade.strategy == self._strategy.strategy_params["id"],
+                Trade.exchange == self.bot.config["exchange"],
+                Trade.timeframe == self.bot.strategy.timeframe,
+                Trade.strategy == self.bot.strategy.strategy_params["id"],
                 (
                     (Trade.open_order_status == "open")
                     | (Trade.open_order_status == "closed")
@@ -52,9 +51,9 @@ class Database:
             Trade.select()
             .where(
                 Trade.symbol == symbol,
-                Trade.exchange == self._config["exchange"],
-                Trade.timeframe == self._strategy.timeframe,
-                Trade.strategy == self._strategy.strategy_params["id"],
+                Trade.exchange == self.bot.config["exchange"],
+                Trade.timeframe == self.bot.strategy.timeframe,
+                Trade.strategy == self.bot.strategy.strategy_params["id"],
                 Trade.open_order_status == "closed",
                 Trade.close_order_status == None,
             )
@@ -69,9 +68,9 @@ class Database:
         open_orders = (
             Trade.select(pw.fn.SUM(Trade.open_cost).alias("sum"))
             .where(
-                Trade.exchange == self._config["exchange"],
-                Trade.timeframe == self._strategy.timeframe,
-                Trade.strategy == self._strategy.strategy_params["id"],
+                Trade.exchange == self.bot.config["exchange"],
+                Trade.timeframe == self.bot.strategy.timeframe,
+                Trade.strategy == self.bot.strategy.strategy_params["id"],
                 (
                     (Trade.open_order_status == "closed")
                     | (Trade.open_order_status == "open")

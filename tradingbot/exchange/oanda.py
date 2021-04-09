@@ -1,15 +1,13 @@
-from strategies.main import Strategy
 import pandas as pd
 from typing import Optional
 
 from tradingbot.exchange import Exchange
-from tradingbot.database import Database
 
 
 class Oanda(Exchange):
-    def __init__(self, config, database: Database, strategy: Strategy) -> None:
+    def __init__(self, bot) -> None:
+        self.bot = bot
         self._api: None
-        self._config = config
 
     async def fetch_current_ohlcv(self, tick: str):
         print("fetch_current_ohlcv on Oanda")

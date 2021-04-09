@@ -4,11 +4,12 @@ from telegram.ext import CallbackContext, CommandHandler, Updater
 
 
 class Telegram:
-    def __init__(self, config, exchange) -> None:
-        self._config = config
-        self._updater = Updater(config["telegram"]["token"])
+    def __init__(self, bot) -> None:
+        self.bot = bot
+
+        self._updater = Updater(self.bot.config["telegram"]["token"])
         self._dispatcher = self._updater.dispatcher
-        self._exchange = exchange
+        self._is_paper_mode = self.bot.config["paper_mode"]
 
         self._init_keyboard()
         self._add_handler()
@@ -24,16 +25,16 @@ class Telegram:
             resize_keyboard=True,
         )
         self._updater.bot.send_message(
-            chat_id=self._config["telegram"]["chat_id"],
-            text=f"{'📄 PAPER_MODE' if self._config['paper_mode'] else '💵 LIVE MODE'} -> Bot is Trading !",
+            chat_id=self.bot.config["telegram"]["chat_id"],
+            text=f"{'📄 PAPER_MODE' if self._is_paper_mode else '💵 LIVE MODE'} -> Bot is Trading !",
             reply_markup=reply_markup,
             disable_notification=True,
         )
 
     def send_message(self, msg: str) -> None:
-        if self._config["telegram"]["enabled"] == True:
+        if self.bot.config["telegram"]["enabled"] == True:
             self._updater.bot.send_message(
-                chat_id=self._config["telegram"]["chat_id"],
+                chat_id=self.bot.config["telegram"]["chat_id"],
                 text=msg,
                 disable_notification=True,
             )

@@ -7,18 +7,12 @@ AVAILABLE_EXCHANGE = ["binance", "oanda"]
 
 class ExchangeResolver:
     @staticmethod
-    def load_exchange(
-        exchange_name: str,
-        config,
-        database: Database,
-        strategy: Strategy,
-        bot,
-    ):
+    def load_exchange(bot):
         exchange = None
 
-        AVAILABLE_EXCHANGE.index(exchange_name)
-        exchange_class = getattr(Exchanges, exchange_name.title())
+        AVAILABLE_EXCHANGE.index(bot.config["exchange"])
+        exchange_class = getattr(Exchanges, bot.config["exchange"].title())
 
-        exchange = exchange_class(config, database, strategy, bot)
+        exchange = exchange_class(bot)
 
         return exchange
