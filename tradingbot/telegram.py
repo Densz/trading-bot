@@ -137,23 +137,10 @@ class Telegram:
         self.send_message("/daily not implemented yet")
 
     def _balance(self, update, context) -> None:
-        """
-        SXP:
-            Available:  0.00136500
-            Balance:  0.00136500
-            Pending:  0.00000000
-            Est. USDT:  0.00409227
-        DOT:
-            Available:  0.00974000
-            Balance:  0.00974000
-            Pending:  0.00000000
-            Est. USDT:  0.37051739
-
-        Estimated Value:
-            USDT:  919.99068188
-            USD:  919.99
-        """
-        self.send_message("/balance not implemented yet")
+        balance = self.bot.exchange.get_balance(self.bot.strategy.main_currency)
+        self.send_message(
+            f"<b>{self.bot.config['exchange'].title()} balance:</b> <code>{balance:.2f} {self.bot.strategy.main_currency}</code>"
+        )
 
     def _forcesell(self, update, context) -> None:
         self.send_message("/forcesell not implemented yet")
