@@ -1,3 +1,4 @@
+from tradingbot.database import Trade
 import arrow
 from tabulate import tabulate
 import re
@@ -143,7 +144,28 @@ class Telegram:
         )
 
     def _forcesell(self, update, context) -> None:
-        self.send_message("/forcesell not implemented yet")
+        if len(context.args) == 0:
+            return self.send_message("/forcesell missing arguments")
+        arg = context.args[0]
+        trade = (
+            Trade.select()
+            .where(
+                Trade.id == arg,
+            )
+            .execute()
+        )
+        if len(trade) == 0:
+            return self.send_message(f"/forcesell no trade found with id {arg}")
+        else:
+            if trade[0].close_order_status != None:
+                return self.send_message(f"Trade id {arg}")
+            sell_price = self.bot.exchange.get_sell_price(trade[0].symbol)
+            self.bot.exchange.create_sell_order(
+                symbol=trade[0].symbol,
+                price=sell_price,
+                trade_id=trade[0].id,
+                reason="telegram_force_sell",
+            )
 
     def clean(self) -> None:
         self._updater.stop()

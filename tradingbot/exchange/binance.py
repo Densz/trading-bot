@@ -66,9 +66,7 @@ class Binance(Exchange):
         if self.bot.config["paper_mode"] == True:
             return amount_allocated_to_strat - open_orders_allocated_amount
 
-        balance_available_in_broker = self.get_balance(
-            self.bot.strategy.main_currency
-        )
+        balance_available_in_broker = self.get_balance(self.bot.strategy.main_currency)
 
         if amount_allocated_to_strat >= balance_available_in_broker:
             return balance_available_in_broker - open_orders_allocated_amount
@@ -167,7 +165,7 @@ class Binance(Exchange):
         return True
 
     # ✅
-    async def create_sell_order(
+    def create_sell_order(
         self,
         symbol: str,
         price: float,
@@ -203,14 +201,14 @@ class Binance(Exchange):
             return False
         try:
             trading_fee_rate = self.get_trading_fees()
-            formatted_amount = self._api_async.amount_to_precision(
+            formatted_amount = self._api.amount_to_precision(
                 symbol, trade[0].amount_available
             )
-            formatted_price = self._api_async.price_to_precision(symbol, price)
+            formatted_price = self._api.price_to_precision(symbol, price)
 
             order = None
             if self.bot.config["paper_mode"] == False:
-                order = await self._api_async.create_limit_sell_order(
+                order = self._api.create_limit_sell_order(
                     symbol, formatted_amount, formatted_price, params=self._params
                 )
                 Trade.update(
@@ -253,7 +251,7 @@ class Binance(Exchange):
                 close_rate=price,
                 reason=reason,
                 profit=profit,
-                profit_pct=profit_pct,
+                profit_pct=profit_pct * 100,
             )
         except ccxt.InsufficientFunds as e:
             print("create_sell_order() failed – not enough funds")
@@ -285,7 +283,7 @@ class Binance(Exchange):
             return
         for order in open_orders:
             if ohlc["close"] <= order.initial_stop_loss:
-                await self.create_sell_order(
+                self.create_sell_order(
                     symbol=order.symbol,
                     price=ohlc["close"],
                     trade_id=order.id,
@@ -293,7 +291,7 @@ class Binance(Exchange):
                 )
                 return
             if ohlc["close"] <= order.current_stop_loss:
-                await self.create_sell_order(
+                self.create_sell_order(
                     symbol=order.symbol,
                     price=ohlc["close"],
                     trade_id=order.id,
@@ -301,7 +299,7 @@ class Binance(Exchange):
                 )
                 return
             if ohlc["close"] >= order.take_profit:
-                await self.create_sell_order(
+                self.create_sell_order(
                     symbol=order.symbol,
                     price=ohlc["close"],
                     trade_id=order.id,
