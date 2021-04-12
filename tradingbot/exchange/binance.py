@@ -1,5 +1,4 @@
-from os import close
-from pprint import pprint
+from telegram.bot import Bot
 from tradingbot import exchange
 from tradingbot.types import Tick
 from typing import Optional
@@ -15,9 +14,9 @@ from tradingbot.database import Database, Trade
 
 
 class Binance(Exchange):
-    def __init__(self, bot) -> None:
+    def __init__(self, bot: Bot) -> None:
         Exchange.__init__(self, bot)
-        self.bot = bot
+        self.bot: Bot = bot
         self._api: ccxt.binance = ccxt.binance({**self.bot.config["binance"]})
         self._api_async: ccxt_async.binance = ccxt_async.binance(
             {**self.bot.config["binance"]}
@@ -47,8 +46,8 @@ class Binance(Exchange):
         return df
 
     # ✅
-    async def get_balance(self, symbol):
-        balances = await self._api_async.fetch_total_balance()
+    def get_balance(self, symbol) -> float:
+        balances = self._api.fetch_total_balance()
         return balances[symbol]
 
     def get_sell_price(self, symbol) -> float:
@@ -67,7 +66,7 @@ class Binance(Exchange):
         if self.bot.config["paper_mode"] == True:
             return amount_allocated_to_strat - open_orders_allocated_amount
 
-        balance_available_in_broker = await self.get_balance(
+        balance_available_in_broker = self.get_balance(
             self.bot.strategy.main_currency
         )
 

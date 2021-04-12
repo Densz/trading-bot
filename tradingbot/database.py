@@ -2,6 +2,8 @@ from pprint import pprint
 from typing import Optional
 import peewee as pw
 from datetime import datetime
+
+from telegram.bot import Bot
 from tradingbot.config import get_config
 
 config = get_config()
@@ -10,8 +12,8 @@ db = pw.SqliteDatabase("sandbox.db" if config["paper_mode"] == True else "live.d
 
 
 class Database:
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: Bot):
+        self.bot: Bot = bot
 
         db.connect()
         try:

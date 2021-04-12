@@ -4,7 +4,6 @@ from tradingbot.database import Database
 from pandas.core.frame import DataFrame
 from tradingbot.types import Tick
 import talib.abstract as ta
-from pprint import pprint
 
 
 class Strategy:
@@ -35,9 +34,9 @@ class Strategy:
         self, exchange: Binance, database: Database, telegram: Telegram
     ) -> None:
         print(f"\033[34m[STRATEGY] {self.strategy_params['id']}", "\033[39m")
-        self._exchange = exchange
-        self._database = database
-        self._telegram = telegram
+        self._exchange: Binance = exchange
+        self._database: Database = database
+        self._telegram: Telegram = telegram
         pass
 
     def _add_indicators(self, df: DataFrame) -> DataFrame:
@@ -67,7 +66,7 @@ class Strategy:
 
         # There is no open trade
         if open_trade == None:
-            if last_candle["RSI"] < 70:
+            if last_candle["RSI"] < 10:
                 print("RSI under 10")
                 await self._exchange.create_buy_order(
                     symbol=tick["symbol"],
@@ -78,7 +77,7 @@ class Strategy:
                 )
         # When there is open trade
         else:
-            if last_candle["RSI"] > 90:
+            if last_candle["RSI"] > 10:
                 print("RSI over 55")
                 await self._exchange.create_sell_order(
                     symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"

@@ -32,9 +32,7 @@ class Worker:
         )
 
         if self.bot.config["paper_mode"] == False:
-            balance = await self.bot.exchange.get_balance(
-                self.bot.strategy.main_currency
-            )
+            balance = self.bot.exchange.get_balance(self.bot.strategy.main_currency)
             print(
                 f"[BALANCE ON BINANCE] {balance:.2f} {self.bot.strategy.main_currency}"
             )

@@ -99,7 +99,7 @@ class Telegram:
         msg = tabulate(
             trades,
             headers=["ID", "Pairs", "Date", "Invested", "Profit"],
-            tablefmt="psql",
+            tablefmt="simple",
             stralign="right",
         )
         self.send_message("<b>" + msg + "</b>")
