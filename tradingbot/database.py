@@ -1,4 +1,5 @@
 from pprint import pprint
+from typing import Optional
 import peewee as pw
 from datetime import datetime
 from tradingbot.config import get_config
@@ -46,11 +47,11 @@ class Database:
     def get_profit(self, strategy_name=None):
         pass
 
-    def get_open_orders(self, symbol: str):
+    def get_open_orders(self, symbol: Optional[str] = ""):
         open_orders = (
             Trade.select()
             .where(
-                Trade.symbol == symbol,
+                Trade.symbol == symbol if symbol else Trade.symbol != None,
                 Trade.exchange == self.bot.config["exchange"],
                 Trade.timeframe == self.bot.strategy.timeframe,
                 Trade.strategy == self.bot.strategy.strategy_params["id"],
