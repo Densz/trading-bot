@@ -76,11 +76,19 @@ class Telegram:
 
         trading_fee_rate = self.bot.exchange.get_trading_fees()
         trades = []
+        open_orders_symbols = []
+
+        for data in open_orders:
+            open_orders_symbols.append(data.symbol)
+
+        # Remove duplicates values -> (list(dict.fromkeys(open_orders_symbols))
+        open_orders_symbols = list(dict.fromkeys(open_orders_symbols))
+        sell_prices = self.bot.exchange.get_tickers(symbols=open_orders_symbols)
+
         for row in open_orders:
-            sell_price = self.bot.exchange.get_sell_price(row.symbol)
             [profit, profit_pct, close_return] = self.bot.exchange.calculate_profit(
                 amount_available=row.amount_available,
-                close_price=sell_price,
+                close_price=sell_prices[row.symbol],
                 open_cost=row.open_cost,
                 trading_fee_rate=trading_fee_rate,
             )
@@ -159,10 +167,10 @@ class Telegram:
         else:
             if trade[0].close_order_status != None:
                 return self.send_message(f"Trade id {arg}")
-            sell_price = self.bot.exchange.get_sell_price(trade[0].symbol)
+            sell_price = self.bot.exchange.get_tickers(trade[0].symbol)
             self.bot.exchange.create_sell_order(
                 symbol=trade[0].symbol,
-                price=sell_price,
+                price=sell_price[trade[0].symbol],
                 trade_id=trade[0].id,
                 reason="telegram_force_sell",
             )

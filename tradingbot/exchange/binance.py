@@ -23,10 +23,10 @@ class Binance(Exchange):
         )
         # ccxt params for making calls
         self._params = {"test": self.bot.config["paper_mode"]}
+        self._api.load_markets()
         asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
 
-    # ✅
-    async def fetch_current_ohlcv(self, tick: str, test="") -> Tick:
+    async def fetch_current_ohlcv(self, tick: str) -> Tick:
         tick_info = await self._api_async.fetch_ticker(tick)
         current_tick: Tick = {
             "symbol": tick_info["symbol"],
@@ -38,28 +38,35 @@ class Binance(Exchange):
         }
         return current_tick
 
-    # ✅
     async def fetch_historic_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
         data: list = await self._api_async.fetch_ohlcv(tickers, timeframe)
         df = pd.DataFrame(data, columns=self._columns)
         df["date"] = pd.to_datetime(df["date"], unit="ms")
         return df
 
-    # ✅
+    # Get balance available in the main currency on Binance
+    # Example response: 945.123 (of the main currency)
     def get_balance(self, symbol) -> float:
         balances = self._api.fetch_total_balance()
         return balances[symbol]
 
-    def get_sell_price(self, symbol) -> float:
+    # Return the last close price of the tickers in the array
+    # Example response: {
+    #   "DOGE/USDT": 0.09213,
+    #   "BTC/USDT": 0.12312
+    # }
+    def get_tickers(self, symbols) -> float:
         try:
-            order_book = self._api.fetch_l2_order_book(symbol, limit=5)
-            return order_book["asks"][0][0]
+            ticks = self._api.fetch_tickers(symbols)
+            result = {}
+            for key in ticks:
+                result[key] = ticks[key]["last"]
+            return result
         except ValueError as e:
             print("Fail getting sell value (ask price)", e)
             return None
 
-    # ✅
-    async def get_tradable_balance(self):
+    async def get_tradable_balance(self) -> float:
         open_orders_allocated_amount = self.bot.database.get_used_amount()
         amount_allocated_to_strat = self.bot.strategy.amount_allocated
 
@@ -73,7 +80,6 @@ class Binance(Exchange):
 
         return amount_allocated_to_strat - open_orders_allocated_amount
 
-    # ✅
     async def create_buy_order(
         self,
         symbol: str,
@@ -164,7 +170,6 @@ class Binance(Exchange):
             return False
         return True
 
-    # ✅
     def create_sell_order(
         self,
         symbol: str,
@@ -205,7 +210,6 @@ class Binance(Exchange):
                 symbol, trade[0].amount_available
             )
             formatted_price = self._api.price_to_precision(symbol, price)
-
             order = None
             if self.bot.config["paper_mode"] == False:
                 order = self._api.create_limit_sell_order(
@@ -263,19 +267,15 @@ class Binance(Exchange):
             return False
         return True
 
-    # ✅
     def get_trading_fees(self):
         return 0.001
 
-    # ✅
     def get_market_symbols(self):
         return self._api_async.symbols
 
-    # ✅
     async def close_connection(self):
         await self._api_async.close()
 
-    # ✅
     async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
         open_orders = self.bot.database.get_open_orders(symbol=symbol)
 
@@ -307,7 +307,6 @@ class Binance(Exchange):
                 )
                 return
 
-    # ✅
     async def check_pending_orders(self) -> None:
         if self.bot.config["paper_mode"] == True:
             return
