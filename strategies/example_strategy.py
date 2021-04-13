@@ -30,14 +30,10 @@ class Strategy:
         "rsi_high_level": 70,
     }
 
-    def __init__(
-        self, exchange: Binance, database: Database, telegram: Telegram
-    ) -> None:
-        print(f"\033[34m[STRATEGY] {self.strategy_params['id']}", "\033[39m")
-        self._exchange: Binance = exchange
-        self._database: Database = database
-        self._telegram: Telegram = telegram
-        pass
+    def __init__(self, bot) -> None:
+        self._exchange: Binance = bot.exchange
+        self._database: Database = bot.database
+        self._telegram: Telegram = bot.telegram
 
     def _add_indicators(self, df: DataFrame) -> DataFrame:
         df["RSI"] = ta.RSI(df["close"])
@@ -58,16 +54,10 @@ class Strategy:
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(symbol=tick["symbol"])
         last_candle = df.tail(1).to_dict("records")[0]
-        print("RSI ->", str(last_candle["RSI"]))
-        print("open_trade ->", open_trade != None)
-
-        if last_candle["RSI"] > 50 and last_candle["RSI"] < 55:
-            print("Between 50 & 55")
 
         # There is no open trade
         if open_trade == None:
             if last_candle["RSI"] < 50:
-                print("RSI under 50")
                 await self._exchange.create_buy_order(
                     symbol=tick["symbol"],
                     amount=amount,
@@ -78,7 +68,6 @@ class Strategy:
         # When there is open trade
         else:
             if last_candle["RSI"] > 50:
-                print("RSI over 50")
                 self._exchange.create_sell_order(
                     symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"
                 )

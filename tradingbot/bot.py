@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 from tradingbot.exchange.binance import Binance
 from typing import Optional
 
@@ -8,13 +9,12 @@ from tradingbot.database import Database
 from tradingbot.worker import Worker
 from tradingbot.exchange.exchange_resolver import ExchangeResolver
 
-from strategies.main import Strategy
-
 
 class Bot:
     def __init__(self):
         self.config = get_config()
-        self.strategy: Strategy = Strategy
+        self.strategy = self.get_strategy_from_name(self.config["strategy"])
+
         self.database: Database = Database(self)
         self.exchange: Binance = ExchangeResolver.load_exchange(self)
         self.telegram: Telegram = Telegram(self)
@@ -90,3 +90,16 @@ class Bot:
         print(terminal_msg)
         print("-------------------------")
         return msg
+
+    @staticmethod
+    def get_strategy_from_name(strategy: str):
+        try:
+            StrategyClass = getattr(
+                importlib.import_module(f"strategies.{strategy}"),
+                "Strategy",
+            )
+            return StrategyClass
+        except:
+            print(
+                f"Could not find strategy [{strategy}.py], please change your config.json file. Please also make sure that the class of the file is named [class Strategy]"
+            )

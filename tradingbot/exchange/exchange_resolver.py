@@ -1,4 +1,3 @@
-from strategies.main import Strategy
 from tradingbot.database import Database
 import tradingbot.exchange as Exchanges
 

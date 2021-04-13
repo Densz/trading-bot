@@ -1,6 +1,7 @@
 {
   "paper_mode": true,
   "exchange": "binance",
+  "strategy": "example_strategy.py",
   "binance": {
     "apiKey": "",
     "secret": "",

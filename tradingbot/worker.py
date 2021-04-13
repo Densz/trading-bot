@@ -1,22 +1,20 @@
 import time
 import asyncio
-import ccxt
 from pandas.core.frame import DataFrame
 from datetime import datetime
 
-from strategies.main import Strategy
-from pprint import pprint
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tradingbot.bot import Bot
 
 THROTTLE_SECS = 5  # sec
 
 
 class Worker:
-    def __init__(self, bot) -> None:
-        self.bot = bot
-
-        self.strategy = Strategy(
-            self.bot.exchange, self.bot.database, self.bot.telegram
-        )
+    def __init__(self, bot: "Bot") -> None:
+        self.bot: "Bot" = bot
+        self.strategy = self.bot.strategy(bot)
         self._last_throttle_time = 0
 
     # ✅
