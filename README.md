@@ -30,3 +30,7 @@ Exit the current venv
 
 Freeze packages
 `pip freeze > requirements.txt`
+
+## Pip
+
+`pip install --upgrade pip`
