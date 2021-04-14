@@ -34,3 +34,8 @@ Freeze packages
 ## Pip
 
 `pip install --upgrade pip`
+
+## Install TA-Lib
+
+On ubuntu
+https://sachsenhofer.io/install-ta-lib-ubuntu-server/
