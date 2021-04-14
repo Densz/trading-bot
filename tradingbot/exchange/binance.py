@@ -1,6 +1,3 @@
-from telegram import bot
-from telegram.bot import Bot
-from tradingbot import exchange
 from tradingbot.types import Tick
 from typing import Optional
 import ccxt
@@ -11,11 +8,16 @@ from datetime import datetime
 import uuid
 
 from tradingbot.exchange.exchange import Exchange
-from tradingbot.database import Database, Trade
+from tradingbot.database import Trade
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tradingbot.bot import Bot
 
 
 class Binance(Exchange):
-    def __init__(self, bot: Bot) -> None:
+    def __init__(self, bot: "Bot") -> None:
         Exchange.__init__(self, bot)
         self._api: ccxt.binance = ccxt.binance({**self.bot.config["binance"]})
         self._api_async: ccxt_async.binance = ccxt_async.binance(
