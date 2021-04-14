@@ -26,7 +26,7 @@ class Strategy:
     # For backtesting will save the params in DB
     # Could be useful for machine learning testing best parameters for better results
     strategy_params = {
-        "id": "Bollinger bands strategy",  # Should always be here
+        "id": "sample rsi strategy",  # Should always be here
         "rsi_lower_level": 30,
         "rsi_high_level": 70,
     }
@@ -52,12 +52,11 @@ class Strategy:
         limit = 10.5  # USDT
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(symbol=tick["symbol"])
-        last_candle = df.tail(1).to_dict("records")[0]
+        last_bar = df.loc[0]
 
-        pprint(df)
         # There is no open trade
         if open_trade == None:
-            if last_candle["RSI"] < 50:
+            if last_bar["RSI"] < self.strategy_params["rsi_lower_level"]:
                 await self._exchange.create_buy_order(
                     symbol=tick["symbol"],
                     amount=amount,
@@ -67,20 +66,8 @@ class Strategy:
                 )
         # When there is open trade
         else:
-            if last_candle["RSI"] > 50:
+            if last_bar["RSI"] > self.strategy_params["rsi_high_level"]:
                 self._exchange.create_sell_order(
                     symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"
                 )
-        pass
-
-    def _calculate_take_profit(self):
-        pass
-
-    def _calculate_stop_loss(self):
-        pass
-
-    def _calculate_amount(self):
-        pass
-
-    def _check_if_order_open(self):
         pass

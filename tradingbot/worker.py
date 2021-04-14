@@ -24,7 +24,7 @@ class Worker:
 
     # ✅
     async def _run_bot(self):
-        tradable_balance = await self.bot.exchange.get_tradable_balance()
+        tradable_balance = self.bot.exchange.get_tradable_balance()
         print(
             f"[TRADABLE BALANCE] {tradable_balance:.2f} {self.bot.strategy.main_currency}"
         )
@@ -56,7 +56,10 @@ class Worker:
                         symbol=tick_details["symbol"], ohlc=tick_details
                     )
                 df_with_indicators = self.strategy.add_indicators(dataframe)
-                await self.strategy.on_tick(df_with_indicators, tick_details)
+                sorted_df = df_with_indicators.sort_values(by="date", ascending=False)
+                sorted_df.reset_index(inplace=True)
+                del sorted_df["index"]
+                await self.strategy.on_tick(sorted_df, tick_details)
 
         except ValueError as e:
             print(str(e))
