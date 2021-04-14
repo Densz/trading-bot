@@ -42,6 +42,7 @@ class Worker:
             timeframe = self.bot.strategy.timeframe
 
             for tick in tickers:
+                print("\033[34m---> Tick: ", tick, "\033[39m")
                 tick_details = await self.bot.exchange.fetch_current_ohlcv(tick)
                 dataframe: DataFrame = await self.bot.exchange.fetch_historic_ohlcv(
                     tick, timeframe
@@ -54,8 +55,8 @@ class Worker:
                     await self.bot.exchange.trigger_stoploss_takeprofit(
                         symbol=tick_details["symbol"], ohlc=tick_details
                     )
-
-                await self.strategy.on_tick(dataframe, tick_details)
+                df_with_indicators = self.strategy.add_indicators(dataframe)
+                await self.strategy.on_tick(df_with_indicators, tick_details)
 
         except ValueError as e:
             print(str(e))

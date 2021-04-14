@@ -4,6 +4,7 @@ from tradingbot.database import Database
 from pandas.core.frame import DataFrame
 from tradingbot.types import Tick
 import talib.abstract as ta
+from pprint import pprint
 
 
 class Strategy:
@@ -35,7 +36,7 @@ class Strategy:
         self._database: Database = bot.database
         self._telegram: Telegram = bot.telegram
 
-    def _add_indicators(self, df: DataFrame) -> DataFrame:
+    def add_indicators(self, df: DataFrame) -> DataFrame:
         df["RSI"] = ta.RSI(df["close"])
 
         macd = ta.MACD(df, window_fast=12, window_slow=26)
@@ -48,13 +49,12 @@ class Strategy:
         return df
 
     async def on_tick(self, df: DataFrame, tick: Tick) -> None:
-        print("\033[34m---> Tick: ", tick["symbol"], "\033[39m")
-        df = self._add_indicators(df)
         limit = 10.5  # USDT
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(symbol=tick["symbol"])
         last_candle = df.tail(1).to_dict("records")[0]
 
+        pprint(df)
         # There is no open trade
         if open_trade == None:
             if last_candle["RSI"] < 50:
