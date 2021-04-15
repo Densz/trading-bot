@@ -39,3 +39,7 @@ Freeze packages
 
 On ubuntu
 https://sachsenhofer.io/install-ta-lib-ubuntu-server/
+
+## Running python on background
+
+https://janakiev.com/blog/python-background/
