@@ -374,6 +374,47 @@ class Binance(Exchange):
             print("check_pending_orders() for sell orders failed")
             print(e)
 
+    def get_all_balances(self):
+        bal = {}
+        results = {}
+        symbols = []
+        total = 0
+        main_currency = self.bot.strategy.main_currency
+        balances = self._api.fetch_balance()
+
+        for item in balances["free"].items():
+            if item[1] > 0:
+                if item[0] != main_currency:
+                    symbols.append(f"{item[0]}/{main_currency}")
+                bal[item[0]] = item[1]
+
+        tickers = self._api.fetch_tickers(symbols)
+
+        for item in bal.items():
+            if item[0] == main_currency:
+                total += item[1]
+                results[main_currency] = {
+                    "Available": "{:.2f}".format(round(item[1], 2)),
+                    "Est USDT": "{:.2f}".format(round(item[1], 2)),
+                }
+            else:
+                estimated_value = (
+                    item[1] * tickers[f"{item[0]}/{main_currency}"]["close"]
+                )
+                total += estimated_value
+                if estimated_value > 1:
+                    results[item[0]] = {
+                        "Available": item[1],
+                        f"Est {main_currency}": "{:.2f}".format(
+                            round(estimated_value, 2)
+                        ),
+                    }
+        results["Total"] = {
+            "Tradable": self.get_balance(main_currency),
+            f"Total {main_currency}": "{:.2f}".format(round(total, 2)),
+        }
+        return results
+
     @staticmethod
     def calculate_profit(
         open_cost: float,

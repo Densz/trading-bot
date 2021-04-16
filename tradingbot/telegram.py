@@ -146,10 +146,13 @@ class Telegram:
         self.send_message("/daily not implemented yet")
 
     def _balance(self, update, context) -> None:
-        balance = self.bot.exchange.get_balance(self.bot.strategy.main_currency)
-        self.send_message(
-            f"<b>{self.bot.config['exchange'].title()} balance:</b> <code>{balance:.2f} {self.bot.strategy.main_currency}</code>"
-        )
+        msg = ""
+        balances = self.bot.exchange.get_all_balances()
+        for item in balances.items():
+            msg += f"\n<b>{item[0]}:</b>\n"
+            for data in item[1].items():
+                msg += f"{data[0]}: <code>{data[1]}</code>\n"
+        self.send_message(msg)
 
     def _forcesell(self, update, context) -> None:
         if len(context.args) == 0:
