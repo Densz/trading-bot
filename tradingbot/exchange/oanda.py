@@ -19,7 +19,7 @@ class Oanda(Exchange):
     async def get_balance(self, currency):
         pass
 
-    async def create_buy_order(
+    def create_buy_order(
         self,
         symbol: str,
         amount: float,

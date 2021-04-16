@@ -57,7 +57,7 @@ class Strategy:
         # There is no open trade
         if open_trade == None:
             if last_bar["RSI"] < self.strategy_params["rsi_lower_level"]:
-                await self._exchange.create_buy_order(
+                self._exchange.create_buy_order(
                     symbol=tick["symbol"],
                     amount=amount,
                     price=tick["close"],

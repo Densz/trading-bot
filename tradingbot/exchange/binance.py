@@ -82,7 +82,7 @@ class Binance(Exchange):
 
         return amount_allocated_to_strat - open_orders_allocated_amount
 
-    async def create_buy_order(
+    def create_buy_order(
         self,
         symbol: str,
         amount: float,
@@ -112,7 +112,7 @@ class Binance(Exchange):
             formatted_price = self._api_async.price_to_precision(symbol, price)
             order = None
             if self.bot.config["paper_mode"] == False:
-                order = await self._api_async.create_limit_buy_order(
+                order = self._api.create_limit_buy_order(
                     symbol, formatted_amount, formatted_price, params=self._params
                 )
                 Trade.create(

@@ -1,5 +1,7 @@
 import time
 import asyncio
+import ccxt
+import sys
 from pandas.core.frame import DataFrame
 from datetime import datetime
 
@@ -60,9 +62,11 @@ class Worker:
                 sorted_df.reset_index(inplace=True)
                 del sorted_df["index"]
                 await self.strategy.on_tick(sorted_df, tick_details)
-
-        except ValueError as e:
-            print(str(e))
+        except ccxt.ExchangeNotAvailable:
+            print("Binance: Exchange not available trying again...")
+            time.sleep(10)
+        except:
+            print("An error occured:", sys.exc_info()[0])
             print("Fail: _run_bot() trying again...")
 
     # ✅
