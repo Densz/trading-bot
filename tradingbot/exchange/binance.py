@@ -410,7 +410,7 @@ class Binance(Exchange):
                         ),
                     }
         results["Total"] = {
-            "Tradable": self.get_balance(main_currency),
+            "Tradable": "{:.2f}".format(round(self.get_balance(main_currency), 2)),
             f"Total {main_currency}": "{:.2f}".format(round(total, 2)),
         }
         return results
