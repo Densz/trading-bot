@@ -66,8 +66,9 @@ class Bot:
         profit: float = 0,
         profit_pct: float = 0,
     ):
+        icon = "❌ " if profit < 0 else "✅ "
         template = [
-            [f"❌ {exchange.title()}", f"Selling {symbol}\n"],
+            [f"{icon} {exchange.title()}", f"Selling {symbol}\n"],
             ["Amount", f"{amount}\n"],
             ["Open rate", f"{open_rate}\n"],
             ["Current rate", f"{current_rate}\n"],
