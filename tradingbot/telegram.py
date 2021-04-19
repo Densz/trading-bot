@@ -29,7 +29,7 @@ class Telegram:
     def _init_keyboard(self) -> None:
         reply_markup = ReplyKeyboardMarkup(
             [
-                ["/status", "/profit", "/daily"],
+                ["/status", "/profit", "/info"],
                 ["/balance", "/forcesell", "/help"],
             ],
             resize_keyboard=True,
@@ -56,7 +56,7 @@ class Telegram:
             CommandHandler("help", self._help),
             CommandHandler("status", self._status),
             CommandHandler("profit", self._profit),
-            CommandHandler("daily", self._daily),
+            CommandHandler("info", self._info),
             CommandHandler("balance", self._balance),
             CommandHandler("forcesell", self._forcesell),
         ]
@@ -130,20 +130,14 @@ class Telegram:
         """
         self.send_message("/profit not implemented yet")
 
-    def _daily(self, update, context) -> None:
-        """
-        Daily Profit over the last 7 days:
-        Day         Profit USDT      Profit USD    Trades
-        ----------  ---------------  ------------  --------
-        2021-04-12  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-11  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-10  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-09  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-08  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-07  0.00000000 USDT  0.000 USD     0 trades
-        2021-04-06  0.00000000 USDT  0.000 USD     0 trades
-        """
-        self.send_message("/daily not implemented yet")
+    def _info(self, update, context) -> None:
+        msg = (
+            f"<b>Strategy</b>: <code>{self.bot.strategy.strategy_params['id']}</code>\n"
+        )
+        msg += f"<b>Timeframe</b>: <code>{self.bot.strategy.timeframe}</code>\n"
+        msg += f"<b>Amount allocated</b>: <code>{self.bot.strategy.amount_allocated}</code>\n"
+        msg += f"<b>Tickers</b>: <code>{self.bot.strategy.tickers}</code>\n"
+        self.send_message(msg)
 
     def _balance(self, update, context) -> None:
         msg = ""
