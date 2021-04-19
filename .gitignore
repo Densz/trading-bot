@@ -131,3 +131,4 @@ config.json
 examples/*
 *.db
 /strategies/strategy*
+nohup.out
