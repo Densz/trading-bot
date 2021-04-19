@@ -14,6 +14,7 @@ class Strategy:
     timeframe = "1m"
     tickers = [
         "DOGE/USDT",
+        "BNB/USDT",
         "DOT/USDT",
         "LINK/USDT",
         "LTC/USDT",
@@ -49,10 +50,11 @@ class Strategy:
         return df
 
     async def on_tick(self, df: DataFrame, tick: Tick) -> None:
-        limit = 10.5  # USDT
+        limit = 13.5  # USDT
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(symbol=tick["symbol"])
         last_bar = df.loc[0]
+        pprint({"rsi": last_bar["RSI"]})
 
         # There is no open trade
         if open_trade == None:

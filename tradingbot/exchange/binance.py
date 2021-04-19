@@ -26,6 +26,7 @@ class Binance(Exchange):
         # ccxt params for making calls
         self._params = {"test": self.bot.config["paper_mode"]}
         self._api.load_markets()
+        # self._api.verbose = True
         asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
 
     async def fetch_current_ohlcv(self, tick: str) -> Tick:
@@ -217,6 +218,12 @@ class Binance(Exchange):
             )
             formatted_price = self._api.price_to_precision(symbol, price)
             order = None
+            [profit, profit_pct, close_return] = self.calculate_profit(
+                open_cost=trade[0].open_cost,
+                amount_available=trade[0].amount_available,
+                close_price=price,
+                trading_fee_rate=trading_fee_rate,
+            )
             if self.bot.config["paper_mode"] == False:
                 order = self._api.create_limit_sell_order(
                     symbol, formatted_amount, formatted_price, params=self._params
@@ -229,12 +236,6 @@ class Binance(Exchange):
                     sell_reason=reason,
                 ).where(Trade.open_order_id == trade[0].open_order_id).execute()
             else:
-                [profit, profit_pct, close_return] = self.calculate_profit(
-                    open_cost=trade[0].open_cost,
-                    amount_available=trade[0].amount_available,
-                    close_price=price,
-                    trading_fee_rate=trading_fee_rate,
-                )
                 Trade.update(
                     close_order_id=uuid.uuid4(),
                     close_order_status="closed",
@@ -338,7 +339,10 @@ class Binance(Exchange):
                         ),
                     ).where(Trade.open_order_id == row.open_order_id).execute()
                     print(
-                        f"\033[32m ✅ EXECUTED BUY ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}]\033[39m"
+                        f"\033[32m ⓘ EXECUTED BUY ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}]\033[39m"
+                    )
+                    self.bot.telegram.send_message(
+                        f"ⓘ <b>Executed BUY order:</b>\nSymbol: <code>{order_detail['symbol']}</code>\nAsked price: <code>{order_detail['average']}</code>\nAsked amount: <code>{order_detail['amount']}</code>"
                     )
         except Exception as e:
             print("check_pending_orders() for buy orders failed")
@@ -354,7 +358,7 @@ class Binance(Exchange):
                 if order_detail["status"] == "closed":
                     [profit, profit_pct, close_return] = self.calculate_profit(
                         open_cost=order_detail["cost"],
-                        amount_available=order_detail["amount_available"],
+                        amount_available=row.amount_available,
                         close_price=order_detail["average"],
                         trading_fee_rate=trading_fee_rate,
                     )
@@ -368,7 +372,10 @@ class Binance(Exchange):
                         profit_pct=profit_pct,
                     ).where(Trade.open_order_id == row.open_order_id).execute()
                     print(
-                        f"\033[32m ✅ EXECUTED SELL ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}], Profit [{profit:.2f} USDT], Profit [{profit_pct:.2f}%]\033[39m"
+                        f"\033[32m ⓘ EXECUTED SELL ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}], Profit [{profit:.2f} USDT], Profit [{profit_pct:.2f}%]\033[39m"
+                    )
+                    self.bot.telegram.send_message(
+                        f"ⓘ <b>Executed SELL order:</b>\nSymbol: <code>{order_detail['symbol']}</code>\nAsked price: <code>{order_detail['average']}</code>\nAsked amount: <code>{order_detail['amount']}</code>"
                     )
         except Exception as e:
             print("check_pending_orders() for sell orders failed")
@@ -423,14 +430,13 @@ class Binance(Exchange):
         is_long=True,
         trading_fee_rate: Optional[float] = 0.001,
     ):
-        profit = 0
-        profit_pct = 0
         if is_long:
             close_return = close_price * amount_available * (1 - trading_fee_rate)
             profit = close_return - open_cost
             profit_pct = (close_return / open_cost) - 1
+            return [profit, profit_pct, close_return]
         else:
             close_return = close_price * amount_available * (1 - trading_fee_rate)
             profit = open_cost - close_return
             profit_pct = (open_cost / close_return) - 1
-        return [profit, profit_pct, close_return]
+            return [profit, profit_pct, close_return]
