@@ -7,6 +7,8 @@ from telegram import ReplyKeyboardMarkup, ParseMode
 from telegram.ext import CommandHandler, Updater
 from telegram.ext.dispatcher import Dispatcher
 
+from tradingbot.database import Trade
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -29,8 +31,9 @@ class Telegram:
     def _init_keyboard(self) -> None:
         reply_markup = ReplyKeyboardMarkup(
             [
-                ["/status", "/profit", "/info"],
-                ["/balance", "/forcesell", "/help"],
+                ["/balance", "/profit", "/historic"],
+                ["/forcesell", "/info", "/help"],
+                ["/status"],
             ],
             resize_keyboard=True,
         )
@@ -59,6 +62,7 @@ class Telegram:
             CommandHandler("info", self._info),
             CommandHandler("balance", self._balance),
             CommandHandler("forcesell", self._forcesell),
+            CommandHandler("historic", self._historic),
         ]
         for handler in handlers:
             self._dispatcher.add_handler(handler)
@@ -129,6 +133,39 @@ class Telegram:
         Best Performing: SXP/USDT: 11.75%
         """
         self.send_message("/profit not implemented yet")
+
+    def _historic(self, update, context) -> None:
+        trades = []
+        db_trades = (
+            Trade.select()
+            .where(Trade.close_order_status == "closed")
+            .order_by(Trade.id.desc())
+            .limit(10)
+            .execute()
+        )
+        for row in db_trades:
+            is_profit = row.profit > 0
+            trades.append(
+                [
+                    "✅" if is_profit else "❌",
+                    row.id,
+                    row.strategy,
+                    row.symbol,
+                    self.shorten_date(
+                        arrow.get(row.close_date.timestamp()).humanize(
+                            only_distance=True
+                        )
+                    ),
+                    f"${row.profit:.2f} ({(row.profit_pct * 100):.2f}%)",
+                ]
+            )
+        msg = tabulate(
+            trades,
+            headers=["Res", "ID", "Strat", "Pairs", "Date", "Profit"],
+            tablefmt="simple",
+            stralign="left",
+        )
+        self.send_message("<b>" + msg + "</b>")
 
     def _info(self, update, context) -> None:
         msg = (
