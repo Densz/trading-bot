@@ -68,9 +68,14 @@ class Telegram:
             self._dispatcher.add_handler(handler)
 
     def _help(self, update, context) -> None:
-        self.send_message(
-            "Available commands:\n/status to get all trades status\n/profit get total profit since the start\n/daily get daily profit\n/balance get current balance in USDT\n/forcesell [ID] sell an open order\n"
-        )
+        msg = "<b>Available commands:</b>\n"
+        msg += "<b>/status</b> get all open trades status\n"
+        msg += "<b>/profit</b> get total profit since the start\n"
+        msg += "<b>/balance</b> get balance for each symbol in exchange\n"
+        msg += "<b>/forcesell [Trade ID]</b> force sell an open order\n"
+        msg += "<b>/historic</b> get historic closed orders\n"
+        msg += "<b>/info</b> get strategy information\n"
+        self.send_message(msg)
 
     def _status(self, update, context) -> None:
         open_orders = self.bot.database.get_open_orders()
@@ -118,21 +123,37 @@ class Telegram:
         self.send_message("<b>" + msg + "</b>")
 
     def _profit(self, update, context) -> None:
-        """
-        ROI: Closed trades
-        ∙ -3.69307039 USDT (0.18%) (10.67 Σ%)
-        ∙ -3.730 USD
-        ROI: All trades
-        ∙ -55.79919668 USDT (-0.25%) (-15.4 Σ%)
-        ∙ -56.357 USD
-        Total Trade Count: 62
-        First Trade opened: 2 weeks ago
-        Latest Trade opened: a day ago
-        Win / Loss: 30 / 28
-        Avg. Duration: 5:41:57
-        Best Performing: SXP/USDT: 11.75%
-        """
-        self.send_message("/profit not implemented yet")
+        total_profit = 0
+        total_profit_pct = 0
+        total_profit_win = 0
+        total_profit_pct_win = 0
+        total_profit_loss = 0
+        total_profit_pct_loss = 0
+        total_trades = 0
+        win_trades = 0
+        loss_trades = 0
+
+        db_trades = Trade.select().where(Trade.close_order_status == "closed").execute()
+
+        for row in db_trades:
+            total_trades += 1
+            if row.profit > 0:
+                win_trades += 1
+                total_profit_win += row.profit
+                total_profit_pct_win += row.profit_pct
+            else:
+                loss_trades += 1
+                total_profit_loss += row.profit
+                total_profit_pct_loss += row.profit_pct
+            total_profit += row.profit
+            total_profit_pct += row.profit_pct
+
+        msg = f"<b>Profit</b>: <code>{total_profit:.2f} {self.bot.strategy.main_currency} ({total_profit_pct:.2f}%)</code>\n"
+        msg += f"<b>Total trades count</b>: <code>{total_trades}</code>\n"
+        msg += f"<b>Win / Loss</b>: <code>{win_trades} / {loss_trades}</code>\n"
+        msg += f"<b>Cumulated Win Profit</b>: <code>{total_profit_win:.2f} {self.bot.strategy.main_currency} ({total_profit_pct_win:.2f}%)</code>\n"
+        msg += f"<b>Cumulated Loss Profit</b>: <code>{total_profit_loss:.2f} {self.bot.strategy.main_currency} ({total_profit_pct_loss:.2f}%)</code>\n"
+        self.send_message(msg)
 
     def _historic(self, update, context) -> None:
         trades = []
