@@ -357,7 +357,7 @@ class Binance(Exchange):
                 )
                 if order_detail["status"] == "closed":
                     [profit, profit_pct, close_return] = self.calculate_profit(
-                        open_cost=order_detail["cost"],
+                        open_cost=row.open_cost,
                         amount_available=row.amount_available,
                         close_price=order_detail["average"],
                         trading_fee_rate=trading_fee_rate,
