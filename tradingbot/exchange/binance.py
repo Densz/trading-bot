@@ -294,6 +294,7 @@ class Binance(Exchange):
     async def close_connection(self):
         await self._api_async.close()
 
+    # FIXME: timeframe might be useless in params
     async def trigger_stoploss_takeprofit(
         self, symbol: str, ohlc, timeframe: str
     ) -> None:

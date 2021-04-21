@@ -20,6 +20,20 @@ RSI_STRATEGY_2 = {
 
 
 class Strategy:
+    """
+    MUST HAVE VARIABLES AND FUNCTIONS BELOW
+    TO BE ABLE TO RUN THE BOT
+    Variables:
+        - main_currency
+        - amount_allocated
+        - tickers
+    Functions:
+        - __init__
+        - add_indicators
+        - on_tick
+
+    """
+
     main_currency = "USDT"
     amount_allocated = 1000
 
@@ -53,7 +67,16 @@ class Strategy:
             self._run_strat_2(df, tick, info)
         pass
 
+    """
+        CUSTOM FUNCTIONS BELOW
+        Examples:
+            - Strategy code
+            - Risk management
+            - Update Stoploss and takeprofit
+    """
+
     def _run_strat_1(self, df, tick, info) -> None:
+        print("Run strat 1")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(
@@ -62,7 +85,7 @@ class Strategy:
             timeframe=info["timeframe"],
         )
         last_bar = df.loc[0]
-        print("Run strat 1")
+
         # There is no open trade
         if open_trade == None:
             if last_bar["RSI"] < RSI_STRATEGY["rsi_lower_level"]:
@@ -88,6 +111,7 @@ class Strategy:
         pass
 
     def _run_strat_2(self, df, tick, info) -> None:
+        print("Run strat 2")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
         open_trade = self._database.has_trade_open(
@@ -96,7 +120,6 @@ class Strategy:
             timeframe=info["timeframe"],
         )
         last_bar = df.loc[0]
-        print("Run strat 2")
 
         # There is no open trade
         if open_trade == None:

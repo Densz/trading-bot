@@ -1,6 +1,7 @@
 from pprint import pprint
 from typing import Optional
 import peewee as pw
+from playhouse.sqlite_ext import *
 from datetime import datetime
 
 from telegram.bot import Bot
@@ -22,6 +23,27 @@ class Database:
             db.create_tables([Trade])
         except:
             pass
+
+    def update_trade(
+        self,
+        trade_id: int,
+        stoploss: Optional[float] = None,
+        takeprofit: Optional[float] = None,
+        data=None,
+    ) -> None:
+        trade = Trade.select().where(Trade.id == trade_id).execute()
+
+        if len(trade) == 0:
+            print(f"ERROR: Could not update trade because id [{trade_id}] not found")
+            return
+
+        Trade.update(
+            current_stop_loss=stoploss if stoploss else trade[0].current_stop_loss,
+            take_profit=takeprofit if takeprofit else trade[0].take_profit,
+            data=data if data else None,
+        ).where(Trade.id == trade_id).execute()
+
+        pass
 
     def has_trade_open(self, symbol: str, strategy: str, timeframe: str):
         query = (
@@ -125,6 +147,8 @@ class Trade(pw.Model):
     profit = pw.FloatField(null=True)
     profit_pct = pw.FloatField(null=True)
     sell_reason = pw.CharField(null=True)
+
+    data = JSONField(null=True)
 
     created_at = pw.DateTimeField(default=datetime.now)
 

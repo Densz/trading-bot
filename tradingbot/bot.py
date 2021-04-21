@@ -27,10 +27,11 @@ class Bot:
         worker.start()
 
     def clean(self):
+        msg = "⛔ Stop trading bot ⛔"
         asyncio.get_event_loop().run_until_complete(self.exchange.close_connection())
-        self.telegram.send_message("⛔ Stop trading bot ⛔")
+        self.telegram.send_message(msg)
         self.telegram.clean()
-        print(f"\033[36m==== ⛔ Stop trading bot ⛔ ====\033[39m")
+        print(f"\033[36m==== {msg} ====\033[39m")
 
     @staticmethod
     def get_strategy_from_name(strategy: str):
