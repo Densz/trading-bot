@@ -90,6 +90,7 @@ class Binance(Exchange):
         timeframe: str,
         amount: float,
         price: float,
+        data=None,  # Dict {}
         stop_loss: Optional[float] = None,
         take_profit: Optional[float] = None,
         is_long=True,
@@ -135,6 +136,7 @@ class Binance(Exchange):
                     initial_stop_loss=stop_loss,
                     current_stop_loss=stop_loss,
                     take_profit=take_profit,
+                    data=data,
                 )
             else:
                 Trade.create(
@@ -158,6 +160,7 @@ class Binance(Exchange):
                     initial_stop_loss=stop_loss,
                     current_stop_loss=stop_loss,
                     take_profit=take_profit,
+                    data=data,
                 )
             self.bot.telegram.notify_buy(
                 exchange=self.bot.config["exchange"],
