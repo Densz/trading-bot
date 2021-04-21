@@ -6,9 +6,9 @@ def main() -> None:
         bot = Bot()
         bot.run()
     except ValueError:
-        print("Oops! An error occured")
+        print("ERROR: Oops! An error occured")
     except KeyboardInterrupt:
-        print("SIGINT received, aborting ...")
+        print("ERROR: SIGINT received, aborting ...")
     finally:
         if bot:
             bot.clean()

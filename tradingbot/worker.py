@@ -1,4 +1,3 @@
-from pprint import pprint
 import time
 import asyncio
 import ccxt
@@ -68,15 +67,15 @@ class Worker:
                     info={"symbol": tick, "timeframe": timeframe},
                 )
         except ccxt.ExchangeNotAvailable:
-            msg = "Binance: Exchange not available trying again..."
+            msg = "ERROR: Binance Exchange not available trying again..."
             print(msg)
             self.bot.telegram.send_message(msg)
             time.sleep(10)
         except:
-            msg = "An error occured:" + sys.exc_info()[0]
+            msg = "ERROR: An error occured:" + sys.exc_info()[0]
             print(msg)
             self.bot.telegram.send_message(msg)
-            print("Fail: _run_bot() trying again...")
+            print("ERROR: _run_bot() trying again...")
 
     async def _throttle(self):
         self._last_throttle_time = time.time()

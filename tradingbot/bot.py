@@ -43,5 +43,5 @@ class Bot:
             return StrategyClass
         except:
             print(
-                f"Could not find strategy [{strategy}.py], please change your config.json file. Please also make sure that the class of the file is named [class Strategy]"
+                f"ERROR: Could not find strategy [{strategy}.py], please change your config.json file. Please also make sure that the class of the file is named [class Strategy]"
             )
