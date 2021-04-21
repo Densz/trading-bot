@@ -31,9 +31,9 @@ class Telegram:
     def _init_keyboard(self) -> None:
         reply_markup = ReplyKeyboardMarkup(
             [
-                ["/balance", "/profit", "/historic"],
-                ["/forcesell", "/info", "/help"],
-                ["/status"],
+                ["/status", "/historic", "/profit"],
+                ["/balance", "/forcesell", "/breakeven"],
+                ["/info", "/help"],
             ],
             resize_keyboard=True,
         )
@@ -67,6 +67,7 @@ class Telegram:
             CommandHandler("balance", self._balance),
             CommandHandler("forcesell", self._forcesell),
             CommandHandler("historic", self._historic),
+            CommandHandler("breakeven", self._breakeven),
         ]
         for handler in handlers:
             self._dispatcher.add_handler(handler)
@@ -76,7 +77,8 @@ class Telegram:
         msg += "<b>/status</b> get all open trades status\n"
         msg += "<b>/profit</b> get total profit since the start\n"
         msg += "<b>/balance</b> get balance for each symbol in exchange\n"
-        msg += "<b>/forcesell [Trade ID]</b> force sell an open order\n"
+        msg += "<b>/forcesell [Trade ID]</b> force sell an open order at the current closing price\n"
+        msg += "<b>/breakeven [Trade ID]</b> make the trade breakeven by updating the stoploss\n"
         msg += "<b>/historic</b> get historic closed orders\n"
         msg += "<b>/info</b> get strategy information\n"
         self.send_message(msg)
@@ -222,7 +224,9 @@ class Telegram:
             return self.send_message(f"/forcesell no trade found with id {arg}")
         else:
             if trade[0].close_order_status != None:
-                return self.send_message(f"Trade id {arg}")
+                return self.send_message(
+                    f"Trade id {arg} is closing or has been closed already"
+                )
             sell_price = self.bot.exchange.get_tickers(trade[0].symbol)
             self.bot.exchange.create_sell_order(
                 symbol=trade[0].symbol,
@@ -232,6 +236,34 @@ class Telegram:
                 trade_id=trade[0].id,
                 reason="telegram_force_sell",
             )
+
+    def _breakeven(self, update, context) -> None:
+        if len(context.args) == 0:
+            return self.send_message("/breakeven missing arguments")
+        arg = context.args[0]
+        trade = (
+            Trade.select()
+            .where(
+                Trade.id == arg,
+            )
+            .execute()
+        )
+        if len(trade) == 0:
+            return self.send_message(f"/breakeven no trade found with id {arg}")
+        else:
+            if trade[0].close_order_status != None:
+                return self.send_message(
+                    f"Trade id {arg} is closing or has been closed already"
+                )
+            sell_price = self.bot.exchange.get_tickers(trade[0].symbol)
+            if sell_price[trade[0].symbol] < trade[0].open_price:
+                return self.send_message(
+                    f"Trade {arg} price is below the breakeven price, you can /forcesell it if needed"
+                )
+            self.bot.database.update_trade(
+                trade_id=trade[0].id, stoploss=trade[0].open_price
+            )
+            self.send_message(f"Trade {arg} stoploss has been set to breakeven price")
 
     def notify_buy(
         self,
