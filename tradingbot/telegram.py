@@ -9,7 +9,7 @@ from telegram.ext.dispatcher import Dispatcher
 
 from tradingbot.database import Trade
 
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from tradingbot.bot import Bot
@@ -45,6 +45,9 @@ class Telegram:
                 disable_notification=True,
                 parse_mode=ParseMode.HTML,
             )
+
+    def clean(self) -> None:
+        self._updater.stop()
 
     def send_message(self, msg: str) -> None:
         if self.bot.config["telegram"]["enabled"] == True:
@@ -230,8 +233,56 @@ class Telegram:
                 reason="telegram_force_sell",
             )
 
-    def clean(self) -> None:
-        self._updater.stop()
+    def notify_buy(
+        self,
+        exchange: str,
+        strategy: str,
+        symbol: str,
+        amount: float,
+        open_rate: float,
+        stop_loss: Optional[float] = 0,
+        take_profit: Optional[float] = None,
+    ):
+        total_invested = amount * open_rate
+        template = [
+            [f"🔵 {exchange.title()}", f"Buying {symbol}\n"],
+            ["Strategy", f"{strategy}\n"],
+            ["Amount", f"{amount}\n"],
+            ["Open rate", f"{open_rate}\n"],
+            ["Total", f"{total_invested:.2f} USDT\n"],
+            ["Stop loss price", f"{stop_loss}\n"],
+            ["Take profit price", f"{take_profit if take_profit != None else ''}"],
+        ]
+        msg = self.format_array_to_msg(template)
+        self.send_message(msg)
+
+    def notify_sell(
+        self,
+        exchange: str,
+        strategy: str,
+        symbol: str,
+        amount: float,
+        open_rate: float,
+        current_rate: float,
+        close_rate: float,
+        reason: str,
+        profit: float = 0,
+        profit_pct: float = 0,
+    ):
+        icon = "❌ " if profit < 0 else "✅ "
+        template = [
+            [f"{icon} {exchange.title()}", f"Selling {symbol}\n"],
+            ["Strategy", f"{strategy}\n"],
+            ["Amount", f"{amount}\n"],
+            ["Open rate", f"{open_rate}\n"],
+            ["Current rate", f"{current_rate}\n"],
+            ["Close rate", f"{close_rate}\n"],
+            ["Reason", f"{reason}\n"],
+            ["Profit (%)", f"{profit_pct:.2f}%\n"],
+            ["Profit (USDT)", f"{profit:.2f} USDT"],
+        ]
+        msg = self.format_array_to_msg(template)
+        self.send_message(msg)
 
     @staticmethod
     def shorten_date(_date: str) -> str:
@@ -244,3 +295,15 @@ class Telegram:
         new_date = re.sub("days?", "d", new_date)
         new_date = re.sub("^an?", "1", new_date)
         return new_date
+
+    @staticmethod
+    def format_array_to_msg(arr):
+        msg = ""
+        terminal_msg = ""
+        for row in arr:
+            msg += "<b>" + row[0] + ":</b> " + "<code>" + row[1] + "</code>"
+            terminal_msg += row[0] + ": " + row[1]
+        print("-------------------------")
+        print(terminal_msg)
+        print("-------------------------")
+        return msg

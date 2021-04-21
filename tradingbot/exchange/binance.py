@@ -159,8 +159,9 @@ class Binance(Exchange):
                     current_stop_loss=stop_loss,
                     take_profit=take_profit,
                 )
-            self.bot.notify_buy(
+            self.bot.telegram.notify_buy(
                 exchange=self.bot.config["exchange"],
+                strategy=strategy,
                 symbol=symbol,
                 amount=float(formatted_amount),
                 open_rate=float(formatted_price),
@@ -262,8 +263,9 @@ class Binance(Exchange):
                     profit_pct=profit_pct,
                     sell_reason=reason,
                 ).where(Trade.open_order_id == trade[0].open_order_id).execute()
-            self.bot.notify_sell(
+            self.bot.telegram.notify_sell(
                 exchange=self.bot.config["exchange"],
+                strategy=strategy,
                 symbol=symbol,
                 amount=trade[0].amount_requested,
                 open_rate=trade[0].open_price,
