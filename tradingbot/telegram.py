@@ -37,13 +37,14 @@ class Telegram:
             ],
             resize_keyboard=True,
         )
-        self._updater.bot.send_message(
-            chat_id=self.bot.config["telegram"]["chat_id"],
-            text=f"<b>🏃 Bot is Trading !</b> <code>{'[Paper mode]' if self._is_paper_mode else '[Live mode]'}</code>",
-            reply_markup=reply_markup,
-            disable_notification=True,
-            parse_mode=ParseMode.HTML,
-        )
+        if self.bot.config["telegram"]["enabled"] == True:
+            self._updater.bot.send_message(
+                chat_id=self.bot.config["telegram"]["chat_id"],
+                text=f"<b>🏃 Bot is Trading !</b> <code>{'[Paper mode]' if self._is_paper_mode else '[Live mode]'}</code>",
+                reply_markup=reply_markup,
+                disable_notification=True,
+                parse_mode=ParseMode.HTML,
+            )
 
     def send_message(self, msg: str) -> None:
         if self.bot.config["telegram"]["enabled"] == True:
@@ -104,6 +105,7 @@ class Telegram:
             trades.append(
                 [
                     row.id,
+                    row.strategy,
                     row.symbol,
                     self.shorten_date(
                         arrow.get(row.open_date.timestamp()).humanize(
@@ -116,7 +118,7 @@ class Telegram:
             )
         msg = tabulate(
             trades,
-            headers=["ID", "Pairs", "Date", "Invested", "Profit"],
+            headers=["ID", "Strat", "Pairs", "Date", "Invested", "Profit"],
             tablefmt="simple",
             stralign="right",
         )
@@ -189,12 +191,8 @@ class Telegram:
         self.send_message("<b>" + msg + "</b>")
 
     def _info(self, update, context) -> None:
-        msg = (
-            f"<b>Strategy</b>: <code>{self.bot.strategy.strategy_params['id']}</code>\n"
-        )
-        msg += f"<b>Timeframe</b>: <code>{self.bot.strategy.timeframe}</code>\n"
+        msg = f"<b>Tickers</b>: <code>{self.bot.strategy.tickers}</code>\n"
         msg += f"<b>Amount allocated</b>: <code>{self.bot.strategy.amount_allocated}</code>\n"
-        msg += f"<b>Tickers</b>: <code>{self.bot.strategy.tickers}</code>\n"
         self.send_message(msg)
 
     def _balance(self, update, context) -> None:
@@ -225,6 +223,8 @@ class Telegram:
             sell_price = self.bot.exchange.get_tickers(trade[0].symbol)
             self.bot.exchange.create_sell_order(
                 symbol=trade[0].symbol,
+                strategy=trade[0].strategy,
+                timeframe=trade[0].timeframe,
                 price=sell_price[trade[0].symbol],
                 trade_id=trade[0].id,
                 reason="telegram_force_sell",

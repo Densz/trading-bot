@@ -86,13 +86,17 @@ class Binance(Exchange):
     def create_buy_order(
         self,
         symbol: str,
+        strategy: str,
+        timeframe: str,
         amount: float,
         price: float,
         stop_loss: Optional[float] = None,
         take_profit: Optional[float] = None,
         is_long=True,
     ):
-        open_trade = self.bot.database.has_trade_open(symbol=symbol)
+        open_trade = self.bot.database.has_trade_open(
+            symbol=symbol, strategy=strategy, timeframe=timeframe
+        )
         tradable_balance = self.get_tradable_balance()
 
         if open_trade != None:
@@ -119,8 +123,8 @@ class Binance(Exchange):
                 Trade.create(
                     exchange=self.bot.config["exchange"],
                     symbol=symbol,
-                    strategy=self.bot.strategy.strategy_params["id"],
-                    timeframe=self.bot.strategy.timeframe,
+                    strategy=strategy,
+                    timeframe=timeframe,
                     is_long=is_long,
                     amount_requested=float(formatted_amount),
                     amount_available=((1 - trading_fee_rate) * float(formatted_amount)),
@@ -136,8 +140,8 @@ class Binance(Exchange):
                 Trade.create(
                     exchange=self.bot.config["exchange"],
                     symbol=symbol,
-                    strategy=self.bot.strategy.strategy_params["id"],
-                    timeframe=self.bot.strategy.timeframe,
+                    strategy=strategy,
+                    timeframe=timeframe,
                     is_long=is_long,
                     amount_requested=float(formatted_amount),
                     amount_available=(1 - trading_fee_rate) * float(formatted_amount),
@@ -176,6 +180,8 @@ class Binance(Exchange):
     def create_sell_order(
         self,
         symbol: str,
+        strategy: str,
+        timeframe: str,
         price: float,
         trade_id: Optional[int] = None,
         reason: str = "",
@@ -186,6 +192,8 @@ class Binance(Exchange):
                 Trade.select()
                 .where(
                     Trade.symbol == symbol,
+                    Trade.strategy == strategy,
+                    Trade.timeframe == timeframe,
                     Trade.id == trade_id,
                     Trade.close_order_id == None,
                 )
@@ -195,7 +203,8 @@ class Binance(Exchange):
             trade = (
                 Trade.select()
                 .where(
-                    Trade.strategy == self.bot.strategy.strategy_params["id"],
+                    Trade.strategy == strategy,
+                    Trade.timeframe == timeframe,
                     Trade.symbol == symbol,
                     Trade.close_order_id == None,
                 )
@@ -283,8 +292,12 @@ class Binance(Exchange):
     async def close_connection(self):
         await self._api_async.close()
 
-    async def trigger_stoploss_takeprofit(self, symbol, ohlc) -> None:
-        open_orders = self.bot.database.get_open_orders(symbol=symbol)
+    async def trigger_stoploss_takeprofit(
+        self, symbol: str, ohlc, timeframe: str
+    ) -> None:
+        open_orders = self.bot.database.get_open_orders(
+            symbol=symbol, timeframe=timeframe
+        )
 
         if open_orders == None:
             return
@@ -292,6 +305,8 @@ class Binance(Exchange):
             if order.initial_stop_loss and ohlc["close"] <= order.initial_stop_loss:
                 self.create_sell_order(
                     symbol=order.symbol,
+                    strategy=order.strategy,
+                    timeframe=timeframe,
                     price=ohlc["close"],
                     trade_id=order.id,
                     reason="Stoploss",
@@ -300,6 +315,8 @@ class Binance(Exchange):
             if order.current_stop_loss and ohlc["close"] <= order.current_stop_loss:
                 self.create_sell_order(
                     symbol=order.symbol,
+                    strategy=order.strategy,
+                    timeframe=timeframe,
                     price=ohlc["close"],
                     trade_id=order.id,
                     reason="Ajusted stoploss",
@@ -308,6 +325,8 @@ class Binance(Exchange):
             if order.take_profit and ohlc["close"] >= order.take_profit:
                 self.create_sell_order(
                     symbol=order.symbol,
+                    strategy=order.strategy,
+                    timeframe=timeframe,
                     price=ohlc["close"],
                     trade_id=order.id,
                     reason="Takeprofit",

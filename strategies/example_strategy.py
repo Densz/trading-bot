@@ -6,31 +6,29 @@ from tradingbot.types import Tick
 import talib.abstract as ta
 from pprint import pprint
 
+RSI_STRATEGY = {
+    "id": "RSI",
+    "rsi_lower_level": 45,
+    "rsi_high_level": 55,
+}
+
+RSI_STRATEGY_2 = {
+    "id": "RSI2",
+    "rsi_lower_level": 55,
+    "rsi_high_level": 45,
+}
+
 
 class Strategy:
     main_currency = "USDT"
     amount_allocated = 1000
 
-    timeframe = "1m"
     tickers = [
-        "DOGE/USDT",
-        "BNB/USDT",
-        "DOT/USDT",
-        "LINK/USDT",
-        "LTC/USDT",
-        "BCH/USDT",
-        "ATOM/USDT",
-        "SXP/USDT",
-        "BTC/USDT",
+        ("DOGE/USDT", "1m"),
+        ("DOGE/USDT", "15m"),
+        ("BNB/USDT", "1m"),
+        ("BTC/USDT", "1m"),
     ]
-
-    # For backtesting will save the params in DB
-    # Could be useful for machine learning testing best parameters for better results
-    strategy_params = {
-        "id": "sample rsi strategy",  # Should always be here
-        "rsi_lower_level": 30,
-        "rsi_high_level": 70,
-    }
 
     def __init__(self, bot) -> None:
         self._exchange: Binance = bot.exchange
@@ -49,18 +47,29 @@ class Strategy:
 
         return df
 
-    async def on_tick(self, df: DataFrame, tick: Tick) -> None:
+    def on_tick(self, df: DataFrame, tick: Tick, info) -> None:
+        self._run_strat_1(df, tick, info)
+        if tick["symbol"] == "DOGE/USDT" and info["timeframe"] == "15m":
+            self._run_strat_2(df, tick, info)
+        pass
+
+    def _run_strat_1(self, df, tick, info) -> None:
         limit = 13.5  # USDT
         amount = limit / tick["close"]
-        open_trade = self._database.has_trade_open(symbol=tick["symbol"])
+        open_trade = self._database.has_trade_open(
+            symbol=tick["symbol"],
+            strategy=RSI_STRATEGY["id"],
+            timeframe=info["timeframe"],
+        )
         last_bar = df.loc[0]
-        pprint({"rsi": last_bar["RSI"]})
-
+        print("Run strat 1")
         # There is no open trade
         if open_trade == None:
-            if last_bar["RSI"] < self.strategy_params["rsi_lower_level"]:
+            if last_bar["RSI"] < RSI_STRATEGY["rsi_lower_level"]:
                 self._exchange.create_buy_order(
                     symbol=tick["symbol"],
+                    strategy=RSI_STRATEGY["id"],
+                    timeframe=info["timeframe"],
                     amount=amount,
                     price=tick["close"],
                     stop_loss=tick["close"] * 0.95,
@@ -68,8 +77,47 @@ class Strategy:
                 )
         # When there is open trade
         else:
-            if last_bar["RSI"] > self.strategy_params["rsi_high_level"]:
+            if last_bar["RSI"] > RSI_STRATEGY["rsi_high_level"]:
                 self._exchange.create_sell_order(
-                    symbol=tick["symbol"], price=tick["close"], reason="RSI OVER 55"
+                    symbol=tick["symbol"],
+                    strategy=RSI_STRATEGY["id"],
+                    timeframe=info["timeframe"],
+                    price=tick["close"],
+                    reason="RSI OVER 70",
+                )
+        pass
+
+    def _run_strat_2(self, df, tick, info) -> None:
+        limit = 13.5  # USDT
+        amount = limit / tick["close"]
+        open_trade = self._database.has_trade_open(
+            symbol=tick["symbol"],
+            strategy=RSI_STRATEGY_2["id"],
+            timeframe=info["timeframe"],
+        )
+        last_bar = df.loc[0]
+        print("Run strat 2")
+
+        # There is no open trade
+        if open_trade == None:
+            if last_bar["RSI"] > RSI_STRATEGY_2["rsi_lower_level"]:
+                self._exchange.create_buy_order(
+                    symbol=tick["symbol"],
+                    strategy=RSI_STRATEGY_2["id"],
+                    timeframe=info["timeframe"],
+                    amount=amount,
+                    price=tick["close"],
+                    stop_loss=tick["close"] * 0.95,
+                    take_profit=tick["close"] * 1.05,
+                )
+        # When there is open trade
+        else:
+            if last_bar["RSI"] < RSI_STRATEGY_2["rsi_high_level"]:
+                self._exchange.create_sell_order(
+                    symbol=tick["symbol"],
+                    strategy=RSI_STRATEGY_2["id"],
+                    timeframe=info["timeframe"],
+                    price=tick["close"],
+                    reason="RSI UNDER 30",
                 )
         pass

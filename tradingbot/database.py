@@ -23,14 +23,14 @@ class Database:
         except:
             pass
 
-    def has_trade_open(self, symbol: str):
+    def has_trade_open(self, symbol: str, strategy: str, timeframe: str):
         query = (
             Trade.select()
             .where(
                 Trade.symbol == symbol,
                 Trade.exchange == self.bot.config["exchange"],
-                Trade.timeframe == self.bot.strategy.timeframe,
-                Trade.strategy == self.bot.strategy.strategy_params["id"],
+                Trade.timeframe == timeframe,
+                Trade.strategy == strategy,
                 (
                     (Trade.open_order_status == "open")
                     | (Trade.open_order_status == "closed")
@@ -49,14 +49,16 @@ class Database:
     def get_profit(self, strategy_name=None):
         pass
 
-    def get_open_orders(self, symbol: Optional[str] = ""):
+    def get_open_orders(
+        self, symbol: Optional[str] = "", strategy: str = "", timeframe: str = ""
+    ):
         open_orders = (
             Trade.select()
             .where(
                 Trade.symbol == symbol if symbol else Trade.symbol != None,
+                Trade.timeframe == timeframe if timeframe else Trade.symbol != None,
+                Trade.strategy == strategy if strategy else Trade.strategy != None,
                 Trade.exchange == self.bot.config["exchange"],
-                Trade.timeframe == self.bot.strategy.timeframe,
-                Trade.strategy == self.bot.strategy.strategy_params["id"],
                 Trade.open_order_status == "closed",
                 Trade.close_order_status == None,
             )
@@ -67,13 +69,10 @@ class Database:
         return open_orders
 
     def get_used_amount(self):
-        amount = 0
         open_orders = (
             Trade.select(pw.fn.SUM(Trade.open_cost).alias("sum"))
             .where(
                 Trade.exchange == self.bot.config["exchange"],
-                Trade.timeframe == self.bot.strategy.timeframe,
-                Trade.strategy == self.bot.strategy.strategy_params["id"],
                 (
                     (Trade.open_order_status == "closed")
                     | (Trade.open_order_status == "open")
