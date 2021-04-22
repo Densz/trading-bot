@@ -40,7 +40,7 @@ class Database:
         Trade.update(
             current_stop_loss=stoploss if stoploss else trade[0].current_stop_loss,
             take_profit=takeprofit if takeprofit else trade[0].take_profit,
-            data=data if data else None,
+            data=data if data else trade[0].data,
         ).where(Trade.id == trade_id).execute()
 
         pass
