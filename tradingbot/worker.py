@@ -72,7 +72,7 @@ class Worker:
             self.bot.telegram.send_message(msg)
             time.sleep(10)
         except:
-            msg = "ERROR: An error occured:" + sys.exc_info()[0]
+            msg = "ERROR: An error occured: " + str(sys.exc_info()[0])
             print(msg)
             self.bot.telegram.send_message(msg)
             print("ERROR: _run_bot() trying again...")
