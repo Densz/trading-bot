@@ -52,7 +52,7 @@ class Worker:
                 dataframe = dataframe[:-1]
 
                 if hasattr(self.bot.exchange, "trigger_stoploss_takeprofit"):
-                    await self.bot.exchange.trigger_stoploss_takeprofit(
+                    self.bot.exchange.trigger_stoploss_takeprofit(
                         symbol=tick_details["symbol"],
                         ohlc=tick_details,
                         timeframe=timeframe,
