@@ -58,16 +58,12 @@ class Binance(Exchange):
     #   "DOGE/USDT": 0.09213,
     #   "BTC/USDT": 0.12312
     # }
-    def get_tickers(self, symbols) -> float:
-        try:
-            ticks = self._api.fetch_tickers(symbols)
-            result = {}
-            for key in ticks:
-                result[key] = ticks[key]["last"]
-            return result
-        except ValueError as e:
-            print("ERROR: Fail getting sell value (ask price)", e)
-            return None
+    def get_tickers(self, symbols) -> Dict[str, float]:
+        ticks = self._api.fetch_tickers(symbols)
+        result = {}
+        for key in ticks:
+            result[key] = ticks[key]["last"]
+        return result
 
     def get_tradable_balance(self) -> float:
         open_orders_allocated_amount = self.bot.database.get_used_amount()
@@ -78,8 +74,8 @@ class Binance(Exchange):
 
         balance_available_in_broker = self.get_balance(self.bot.strategy.main_currency)
 
-        if amount_allocated_to_strat >= balance_available_in_broker:
-            return balance_available_in_broker - open_orders_allocated_amount
+        if amount_allocated_to_strat >= open_orders_allocated_amount:
+            return balance_available_in_broker
 
         return amount_allocated_to_strat - open_orders_allocated_amount
 
@@ -411,7 +407,7 @@ class Binance(Exchange):
         amount_available: float,
         close_price: float,
         is_long=True,
-        trading_fee_rate: Optional[float] = 0.001,
+        trading_fee_rate: float = 0.001,
     ):
         if is_long:
             close_return = close_price * amount_available * (1 - trading_fee_rate)
