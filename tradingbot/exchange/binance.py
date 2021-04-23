@@ -1,5 +1,5 @@
 from tradingbot.types import Tick
-from typing import Optional
+from typing import Dict, Optional
 import ccxt
 import ccxt.async_support as ccxt_async
 import pandas as pd
@@ -74,10 +74,16 @@ class Binance(Exchange):
 
         balance_available_in_broker = self.get_balance(self.bot.strategy.main_currency)
 
-        if amount_allocated_to_strat >= open_orders_allocated_amount:
+        if (
+            balance_available_in_broker + open_orders_allocated_amount
+            <= amount_allocated_to_strat
+        ):
             return balance_available_in_broker
-
-        return amount_allocated_to_strat - open_orders_allocated_amount
+        if (
+            balance_available_in_broker + open_orders_allocated_amount
+            > amount_allocated_to_strat
+        ):
+            return amount_allocated_to_strat - open_orders_allocated_amount
 
     def create_buy_order(
         self,
