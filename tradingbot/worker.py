@@ -18,7 +18,6 @@ THROTTLE_SECS = 5  # sec
 class Worker:
     def __init__(self, bot: "Bot") -> None:
         self.bot: "Bot" = bot
-        self.strategy: IStrategy = self.bot.strategy(bot)
         self._last_throttle_time = 0
 
     def start(self):
@@ -50,11 +49,11 @@ class Worker:
                         ohlc=tick_details,
                         timeframe=timeframe,
                     )
-                df_with_indicators = self.strategy.add_indicators(dataframe)
+                df_with_indicators = self.bot.strategy.add_indicators(dataframe)
                 sorted_df = df_with_indicators.sort_values(by="date", ascending=False)
                 sorted_df.reset_index(inplace=True)
                 del sorted_df["index"]
-                self.strategy.on_tick(
+                self.bot.strategy.on_tick(
                     sorted_df,
                     tick_details,
                     info={"symbol": tick, "timeframe": timeframe},

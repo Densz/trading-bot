@@ -108,7 +108,6 @@ class Exchange:
         open_orders = self.bot.database.get_open_orders(
             symbol=symbol, timeframe=timeframe
         )
-
         if open_orders == None:
             return
         for order in open_orders:

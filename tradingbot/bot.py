@@ -13,11 +13,14 @@ from tradingbot.exchange.exchange_resolver import ExchangeResolver
 class Bot:
     def __init__(self) -> None:
         self.config = get_config()
-        self.strategy: IStrategy = self.get_strategy_from_name(self.config["strategy"])
 
         self.database: Database = Database(self)
         self.exchange: Exchange = ExchangeResolver.load_exchange(self)
         self.telegram: Telegram = Telegram(self)
+
+        # Strategy loader
+        StrategyInstance = self.get_strategy_from_name(self.config["strategy"])
+        self.strategy: IStrategy = StrategyInstance(self)
 
     def run(self) -> None:
         worker = Worker(self)
@@ -34,7 +37,7 @@ class Bot:
         print(f"\033[36m==== {msg} ====\033[39m")
 
     @staticmethod
-    def get_strategy_from_name(strategy: str) -> IStrategy:
+    def get_strategy_from_name(strategy: str):
         try:
             StrategyClass = getattr(
                 importlib.import_module(f"strategies.{strategy}"),

@@ -13,9 +13,9 @@ class IStrategy:
     tickers: List[Tuple[str, str]]
 
     def __init__(self, bot) -> None:
-        self._exchange: Exchange = bot.exchange
-        self._database: Database = bot.database
-        self._telegram: Telegram = bot.telegram
+        self.exchange: Exchange = bot.exchange
+        self.database: Database = bot.database
+        self.telegram: Telegram = bot.telegram
 
     @abstractmethod
     def add_indicators(self, df: DataFrame) -> DataFrame:

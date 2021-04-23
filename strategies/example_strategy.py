@@ -7,14 +7,14 @@ from pprint import pprint
 
 RSI_STRATEGY = {
     "id": "RSI",
-    "rsi_lower_level": 45,
-    "rsi_high_level": 55,
+    "rsi_lower_level": 50,
+    "rsi_high_level": 50,
 }
 
 RSI_STRATEGY_2 = {
     "id": "RSI2",
-    "rsi_lower_level": 55,
-    "rsi_high_level": 45,
+    "rsi_lower_level": 50,
+    "rsi_high_level": 50,
 }
 
 
@@ -41,6 +41,10 @@ class Strategy(IStrategy):
         ("DOGE/USDT", "15m"),
         ("BNB/USDT", "1m"),
         ("BTC/USDT", "1m"),
+        ("ETH/USDT", "1m"),
+        ("LTC/USDT", "1m"),
+        ("LINK/USDT", "1m"),
+        ("BCH/USDT", "1m"),
     ]
 
     def __init__(self, bot) -> None:
@@ -78,17 +82,18 @@ class Strategy(IStrategy):
         print("Run strat 1")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
-        open_trade = self._database.has_trade_open(
+        open_trade = self.database.has_trade_open(
             symbol=tick["symbol"],
             strategy=RSI_STRATEGY["id"],
             timeframe=info["timeframe"],
         )
         last_bar = df.loc[0]
+        print(last_bar["RSI"])
 
         # There is no open trade
         if open_trade == None:
             if last_bar["RSI"] < RSI_STRATEGY["rsi_lower_level"]:
-                self._exchange.create_buy_order(
+                self.exchange.create_buy_order(
                     symbol=tick["symbol"],
                     strategy=RSI_STRATEGY["id"],
                     timeframe=info["timeframe"],
@@ -100,7 +105,7 @@ class Strategy(IStrategy):
         # When there is open trade
         else:
             if last_bar["RSI"] > RSI_STRATEGY["rsi_high_level"]:
-                self._exchange.create_sell_order(
+                self.exchange.create_sell_order(
                     symbol=tick["symbol"],
                     strategy=RSI_STRATEGY["id"],
                     timeframe=info["timeframe"],
@@ -113,7 +118,7 @@ class Strategy(IStrategy):
         print("Run strat 2")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
-        open_trade = self._database.has_trade_open(
+        open_trade = self.database.has_trade_open(
             symbol=tick["symbol"],
             strategy=RSI_STRATEGY_2["id"],
             timeframe=info["timeframe"],
@@ -123,7 +128,7 @@ class Strategy(IStrategy):
         # There is no open trade
         if open_trade == None:
             if last_bar["RSI"] > RSI_STRATEGY_2["rsi_lower_level"]:
-                self._exchange.create_buy_order(
+                self.exchange.create_buy_order(
                     symbol=tick["symbol"],
                     strategy=RSI_STRATEGY_2["id"],
                     timeframe=info["timeframe"],
@@ -135,7 +140,7 @@ class Strategy(IStrategy):
         # When there is open trade
         else:
             if last_bar["RSI"] < RSI_STRATEGY_2["rsi_high_level"]:
-                self._exchange.create_sell_order(
+                self.exchange.create_sell_order(
                     symbol=tick["symbol"],
                     strategy=RSI_STRATEGY_2["id"],
                     timeframe=info["timeframe"],
