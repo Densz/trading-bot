@@ -1,9 +1,8 @@
-from tradingbot.types import Tick
-from typing import Dict, Optional
+from tradingbot.utils import calculate_profit
+from tradingbot.customtypes import Tick
+from typing import Any, Dict, List, Optional
 import ccxt
-import ccxt.async_support as ccxt_async
 import pandas as pd
-import asyncio
 from datetime import datetime
 import uuid
 
@@ -20,17 +19,13 @@ class Binance(Exchange):
     def __init__(self, bot: "Bot") -> None:
         Exchange.__init__(self, bot)
         self._api: ccxt.binance = ccxt.binance({**self.bot.config["binance"]})
-        self._api_async: ccxt_async.binance = ccxt_async.binance(
-            {**self.bot.config["binance"]}
-        )
         # ccxt params for making calls
         self._params = {"test": self.bot.config["paper_mode"]}
         self._api.load_markets()
         # self._api.verbose = True
-        asyncio.get_event_loop().run_until_complete(self._api_async.load_markets())
 
-    async def fetch_current_ohlcv(self, tick: str) -> Tick:
-        tick_info = await self._api_async.fetch_ticker(tick)
+    def fetch_current_ohlcv(self, tick: str) -> Tick:
+        tick_info = self._api.fetch_ticker(tick)
         current_tick: Tick = {
             "symbol": tick_info["symbol"],
             "high": tick_info["high"],
@@ -41,24 +36,17 @@ class Binance(Exchange):
         }
         return current_tick
 
-    async def fetch_historic_ohlcv(self, tickers, timeframe) -> pd.DataFrame:
-        data: list = await self._api_async.fetch_ohlcv(tickers, timeframe)
+    def fetch_historic_ohlcv(self, symbol: str, timeframe: str) -> pd.DataFrame:
+        data: list = self._api.fetch_ohlcv(symbol, timeframe)
         df = pd.DataFrame(data, columns=self._columns)
         df["date"] = pd.to_datetime(df["date"], unit="ms")
         return df
 
-    # Get balance available in the main currency on Binance
-    # Example response: 945.123 (of the main currency)
-    def get_balance(self, symbol) -> float:
+    def get_balance(self, symbol: str) -> float:
         balances = self._api.fetch_total_balance()
         return balances[symbol]
 
-    # Return the last close price of the tickers in the array
-    # Example response: {
-    #   "DOGE/USDT": 0.09213,
-    #   "BTC/USDT": 0.12312
-    # }
-    def get_tickers(self, symbols) -> Dict[str, float]:
+    def get_tickers(self, symbols: List[str]) -> Dict[str, float]:
         ticks = self._api.fetch_tickers(symbols)
         result = {}
         for key in ticks:
@@ -79,11 +67,7 @@ class Binance(Exchange):
             <= amount_allocated_to_strat
         ):
             return balance_available_in_broker
-        if (
-            balance_available_in_broker + open_orders_allocated_amount
-            > amount_allocated_to_strat
-        ):
-            return amount_allocated_to_strat - open_orders_allocated_amount
+        return amount_allocated_to_strat - open_orders_allocated_amount
 
     def create_buy_order(
         self,
@@ -92,11 +76,11 @@ class Binance(Exchange):
         timeframe: str,
         amount: float,
         price: float,
-        data=None,  # Dict {}
+        data: Dict[str, Any] = None,
         stop_loss: Optional[float] = None,
         take_profit: Optional[float] = None,
-        is_long=True,
-    ):
+        is_long: bool = True,
+    ) -> bool:
         open_trade = self.bot.database.has_trade_open(
             symbol=symbol, strategy=strategy, timeframe=timeframe
         )
@@ -116,8 +100,8 @@ class Binance(Exchange):
 
         try:
             trading_fee_rate = self.get_trading_fees()
-            formatted_amount = self._api_async.amount_to_precision(symbol, amount)
-            formatted_price = self._api_async.price_to_precision(symbol, price)
+            formatted_amount = self._api.amount_to_precision(symbol, amount)
+            formatted_price = self._api.price_to_precision(symbol, price)
             order = None
             if self.bot.config["paper_mode"] == False:
                 order = self._api.create_limit_buy_order(
@@ -233,7 +217,7 @@ class Binance(Exchange):
             )
             formatted_price = self._api.price_to_precision(symbol, price)
             order = None
-            [profit, profit_pct, close_return] = self.calculate_profit(
+            profit, profit_pct, close_return = calculate_profit(
                 open_cost=trade[0].open_cost,
                 amount_available=trade[0].amount_available,
                 close_price=price,
@@ -290,16 +274,13 @@ class Binance(Exchange):
             return False
         return True
 
-    def get_trading_fees(self):
+    def get_trading_fees(self) -> float:
         return 0.001
 
     def get_market_symbols(self):
         return self._api_async.symbols
 
-    async def close_connection(self):
-        await self._api_async.close()
-
-    async def check_pending_orders(self) -> None:
+    def check_pending_orders(self) -> None:
         if self.bot.config["paper_mode"] == True:
             return
 
@@ -309,7 +290,7 @@ class Binance(Exchange):
             # Check open_order_status orders
             data = Trade.select().where(Trade.open_order_status == "open").execute()
             for row in data:
-                order_detail = await self._api_async.fetch_order(
+                order_detail = self._api.fetch_order(
                     id=row.open_order_id, symbol=row.symbol
                 )
                 if order_detail["status"] == "closed":
@@ -337,11 +318,11 @@ class Binance(Exchange):
             # Check close_order_status orders
             data = Trade.select().where(Trade.close_order_status == "open").execute()
             for row in data:
-                order_detail = await self._api_async.fetch_order(
+                order_detail = self._api.fetch_order(
                     id=row.close_order_id, symbol=row.symbol
                 )
                 if order_detail["status"] == "closed":
-                    [profit, profit_pct, close_return] = self.calculate_profit(
+                    profit, profit_pct, close_return = calculate_profit(
                         open_cost=row.open_cost,
                         amount_available=row.amount_available,
                         close_price=order_detail["average"],
@@ -366,7 +347,7 @@ class Binance(Exchange):
             print("ERROR: check_pending_orders() for sell orders failed")
             print(e)
 
-    def get_all_balances(self):
+    def get_all_balances(self) -> Dict[str, Dict[str, Any]]:
         bal = {}
         results = {}
         symbols = []
@@ -406,22 +387,3 @@ class Binance(Exchange):
             f"Total {main_currency}": "{:.2f}".format(round(total, 2)),
         }
         return results
-
-    @staticmethod
-    def calculate_profit(
-        open_cost: float,
-        amount_available: float,
-        close_price: float,
-        is_long=True,
-        trading_fee_rate: float = 0.001,
-    ):
-        if is_long:
-            close_return = close_price * amount_available * (1 - trading_fee_rate)
-            profit = close_return - open_cost
-            profit_pct = (close_return / open_cost) - 1
-            return [profit, profit_pct, close_return]
-        else:
-            close_return = close_price * amount_available * (1 - trading_fee_rate)
-            profit = open_cost - close_return
-            profit_pct = (open_cost / close_return) - 1
-            return [profit, profit_pct, close_return]

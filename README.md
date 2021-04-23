@@ -14,6 +14,12 @@ Run the program when on file changes (make sure you have installed [nodemon](htt
 
 `nodemon --watch tradingbot --watch strategies -e py --exec python3 -m tradingbot`
 
+Run typechecking
+
+`mypy --namespace-packages ./tradingbot/main.py`
+
+`nodemon --watch tradingbot --watch strategies -e py --exec mypy --namespace-packages ./tradingbot/main.py`
+
 ## Virtual Env
 
 Create a virtual env for the project

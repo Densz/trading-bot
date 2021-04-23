@@ -1,4 +1,4 @@
-from tradingbot.database import Trade
+from tradingbot.utils import calculate_profit
 import arrow
 from tabulate import tabulate
 import re
@@ -101,7 +101,7 @@ class Telegram:
         sell_prices = self.bot.exchange.get_tickers(symbols=open_orders_symbols)
 
         for row in open_orders:
-            [profit, profit_pct, close_return] = self.bot.exchange.calculate_profit(
+            profit, profit_pct, close_return = calculate_profit(
                 amount_available=row.amount_available,
                 close_price=sell_prices[row.symbol],
                 open_cost=row.open_cost,

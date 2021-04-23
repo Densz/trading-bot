@@ -1,11 +1,15 @@
 from pprint import pprint
-from typing import Optional
+from typing import Any, Dict, Optional, Union
 import peewee as pw
-from playhouse.sqlite_ext import *
+from playhouse.sqlite_ext import JSONField
 from datetime import datetime
 
-from telegram.bot import Bot
 from tradingbot.config import get_config
+
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tradingbot.bot import Bot
 
 config = get_config()
 
@@ -13,8 +17,8 @@ db = pw.SqliteDatabase("sandbox.db" if config["paper_mode"] == True else "live.d
 
 
 class Database:
-    def __init__(self, bot: Bot):
-        self.bot: Bot = bot
+    def __init__(self, bot: "Bot"):
+        self.bot: "Bot" = bot
 
         db.connect()
         try:
@@ -45,7 +49,9 @@ class Database:
 
         pass
 
-    def has_trade_open(self, symbol: str, strategy: str, timeframe: str):
+    def has_trade_open(
+        self, symbol: str, strategy: str, timeframe: str
+    ) -> Union[Dict[str, Any], None]:
         query = (
             Trade.select()
             .where(
@@ -65,14 +71,8 @@ class Database:
             return query[0]
         return None
 
-    def get_strategy_used_balance(self):
-        pass
-
-    def get_profit(self, strategy_name=None):
-        pass
-
     def get_open_orders(
-        self, symbol: Optional[str] = "", strategy: str = "", timeframe: str = ""
+        self, symbol: Optional[str] = None, strategy: str = None, timeframe: str = None
     ):
         open_orders = (
             Trade.select()
@@ -90,7 +90,7 @@ class Database:
             return None
         return open_orders
 
-    def get_used_amount(self):
+    def get_used_amount(self) -> float:
         open_orders = (
             Trade.select(pw.fn.SUM(Trade.open_cost).alias("sum"))
             .where(

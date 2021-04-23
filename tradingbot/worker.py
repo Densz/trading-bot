@@ -1,7 +1,9 @@
+from tradingbot.strategy import IStrategy
 import time
 import asyncio
 import ccxt
 import sys
+import traceback
 from pandas.core.frame import DataFrame
 from datetime import datetime
 
@@ -16,7 +18,7 @@ THROTTLE_SECS = 5  # sec
 class Worker:
     def __init__(self, bot: "Bot") -> None:
         self.bot: "Bot" = bot
-        self.strategy = self.bot.strategy(bot)
+        self.strategy: IStrategy = self.bot.strategy(bot)
         self._last_throttle_time = 0
 
     def start(self):
@@ -24,18 +26,9 @@ class Worker:
             asyncio.get_event_loop().run_until_complete(self._throttle())
 
     async def _run_bot(self):
-        # tradable_balance = self.bot.exchange.get_tradable_balance()
-        # print(
-        #     f"[TRADABLE BALANCE] {tradable_balance:.2f} {self.bot.strategy.main_currency}"
-        # )
-        if self.bot.config["paper_mode"] == False:
-            balance = self.bot.exchange.get_balance(self.bot.strategy.main_currency)
-            print(
-                f"[BALANCE ON BINANCE] {balance:.2f} {self.bot.strategy.main_currency}"
-            )
         try:
             if hasattr(self.bot.exchange, "check_pending_orders"):
-                await self.bot.exchange.check_pending_orders()
+                self.bot.exchange.check_pending_orders()
 
             tickers = self.bot.strategy.tickers
 
@@ -43,8 +36,8 @@ class Worker:
                 print(
                     "\033[34m---> Tick:", tick, "|| Timeframe:", timeframe, "\033[39m"
                 )
-                tick_details = await self.bot.exchange.fetch_current_ohlcv(tick)
-                dataframe: DataFrame = await self.bot.exchange.fetch_historic_ohlcv(
+                tick_details = self.bot.exchange.fetch_current_ohlcv(tick)
+                dataframe: DataFrame = self.bot.exchange.fetch_historic_ohlcv(
                     tick, timeframe
                 )
                 # Always remove the last row of the dataframe otherwise
@@ -72,6 +65,7 @@ class Worker:
             self.bot.telegram.send_message(msg)
             time.sleep(10)
         except:
+            traceback.print_exc()
             msg = "ERROR: An error occured: " + str(sys.exc_info()[0])
             print(msg)
             self.bot.telegram.send_message(msg)

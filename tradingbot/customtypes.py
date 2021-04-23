@@ -8,3 +8,8 @@ class Tick(TypedDict):
     open: float
     close: float
     baseVolume: float
+
+
+class Info(TypedDict):
+    symbol: str
+    timeframe: str

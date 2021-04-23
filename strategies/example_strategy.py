@@ -1,8 +1,7 @@
-from tradingbot.telegram import Telegram
-from tradingbot.exchange.binance import Binance
-from tradingbot.database import Database
+from tradingbot.strategy import IStrategy
+from tradingbot.customtypes import Tick, Info
+
 from pandas.core.frame import DataFrame
-from tradingbot.types import Tick
 import talib.abstract as ta
 from pprint import pprint
 
@@ -19,7 +18,7 @@ RSI_STRATEGY_2 = {
 }
 
 
-class Strategy:
+class Strategy(IStrategy):
     """
     MUST HAVE VARIABLES AND FUNCTIONS BELOW
     TO BE ABLE TO RUN THE BOT
@@ -45,9 +44,7 @@ class Strategy:
     ]
 
     def __init__(self, bot) -> None:
-        self._exchange: Binance = bot.exchange
-        self._database: Database = bot.database
-        self._telegram: Telegram = bot.telegram
+        IStrategy.__init__(self, bot)
 
     def add_indicators(self, df: DataFrame) -> DataFrame:
         df["RSI"] = ta.RSI(df["close"])
@@ -59,9 +56,11 @@ class Strategy:
 
         df["sma200"] = ta.SMA(df, timeperiod=200)
 
+        df["atr"] = ta.ATR(df["high"], df["low"], df["close"], timeperiod=14)
+
         return df
 
-    def on_tick(self, df: DataFrame, tick: Tick, info) -> None:
+    def on_tick(self, df: DataFrame, tick: Tick, info: Info) -> None:
         self._run_strat_1(df, tick, info)
         if tick["symbol"] == "DOGE/USDT" and info["timeframe"] == "15m":
             self._run_strat_2(df, tick, info)
@@ -75,7 +74,7 @@ class Strategy:
             - Update Stoploss and takeprofit
     """
 
-    def _run_strat_1(self, df, tick, info) -> None:
+    def _run_strat_1(self, df: DataFrame, tick: Tick, info: Info) -> None:
         print("Run strat 1")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
@@ -110,7 +109,7 @@ class Strategy:
                 )
         pass
 
-    def _run_strat_2(self, df, tick, info) -> None:
+    def _run_strat_2(self, df: DataFrame, tick: Tick, info: Info) -> None:
         print("Run strat 2")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
