@@ -1,0 +1,14 @@
+version: '3'
+services:
+  trading-bot:
+    container_name: trading-bot
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    volumes:
+      - "./strategies:/bot/strategies"
+      - "./config.json:/bot/config.json"
+      - "./sandbox.db:/bot/sandbox.db"
+      - "./live.db:/bot/live.db"
+    restart: always
+    command: python3 -m tradingbot
