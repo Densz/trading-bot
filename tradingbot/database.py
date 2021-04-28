@@ -1,4 +1,4 @@
-from pprint import pprint
+from tradingbot.logger import logger
 from typing import Any, Dict, Optional, Union
 import peewee as pw
 from playhouse.sqlite_ext import JSONField
@@ -38,7 +38,7 @@ class Database:
         trade = Trade.select().where(Trade.id == trade_id).execute()
 
         if len(trade) == 0:
-            print(f"ERROR: Could not update trade because id [{trade_id}] not found")
+            logger.error(f"Could not update trade because id [{trade_id}] not found")
             return
 
         Trade.update(

@@ -1,6 +1,7 @@
 import importlib
 import sys
 from tradingbot.strategy import IStrategy
+from tradingbot.logger import logger
 from tradingbot.exchange import Exchange
 
 from tradingbot.chat import Telegram
@@ -26,7 +27,7 @@ class Bot:
         worker = Worker(self)
 
         mode = "PAPER MODE" if self.config["paper_mode"] else "LIVE MODE"
-        print(f"\033[36m==== 🚀 Starting trading bot ({mode}) 🚀 ====\033[39m")
+        logger.warning(f"==== 🚀 Starting trading bot ({mode}) 🚀 ====")
 
         worker.start()
 
@@ -34,7 +35,7 @@ class Bot:
         msg = "⛔ Stop trading bot ⛔"
         self.telegram.send_message(msg)
         self.telegram.clean()
-        print(f"\033[36m==== {msg} ====\033[39m")
+        logger.warning(f"==== {msg} ====")
 
     @staticmethod
     def get_strategy_from_name(strategy: str):
@@ -45,7 +46,7 @@ class Bot:
             )
             return StrategyClass
         except:
-            print("ERROR: An error occured: " + str(sys.exc_info()[0]))
+            logger.error("An error occured: " + str(sys.exc_info()[0]))
             raise BaseException(
-                f"ERROR: Could not find strategy [{strategy}.py], please change your config.json file. Please also make sure that the class of the file is named [class Strategy]"
+                f"Could not find strategy [{strategy}.py], please change your config.json file. Please also make sure that the class of the file is named [class Strategy]"
             )

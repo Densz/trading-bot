@@ -1,4 +1,5 @@
 from tradingbot.utils import calculate_profit
+from tradingbot.logger import logger
 from tradingbot.customtypes import Tick
 from typing import Any, Dict, List, Optional
 import ccxt
@@ -87,22 +88,22 @@ class Binance(Exchange):
         tradable_balance = self.get_tradable_balance()
 
         if open_trade != None:
-            print(
-                "ERROR: Could not create order, a trade already exists and is not closed yet"
+            logger.error(
+                "Could not create order, a trade already exists and is not closed yet"
             )
             return False
         if amount * price > tradable_balance:
-            print("ERROR: Could not create order insufficient funds")
+            logger.error("Could not create order insufficient funds")
             return False
         if amount * price < 10:
-            print("ERROR: Could not create order less than 10 USDT")
+            logger.error("Could not create order less than 10 USDT")
             return False
-
         try:
             trading_fee_rate = self.get_trading_fees()
             formatted_amount = self._api.amount_to_precision(symbol, amount)
             formatted_price = self._api.price_to_precision(symbol, price)
             order = None
+
             if self.bot.config["paper_mode"] == False:
                 order = self._api.create_limit_buy_order(
                     symbol, formatted_amount, formatted_price, params=self._params
@@ -158,12 +159,12 @@ class Binance(Exchange):
                 take_profit=take_profit,
             )
         except ccxt.InsufficientFunds as e:
-            print("ERROR: create_buy_order() failed – not enough funds")
-            print(e)
+            logger.error("create_buy_order() failed – not enough funds")
+            logger.error(e)
             return False
         except Exception as e:
-            print("ERROR: create_buy_order() failed")
-            print(e)
+            logger.error("create_buy_order() failed")
+            logger.error(e)
             return False
         return True
 
@@ -201,13 +202,13 @@ class Binance(Exchange):
                 .execute()
             )
         if len(trade) != 1:
-            print(
-                "ERROR: Could not create sell order because zero or more than one trade found in db"
+            logger.error(
+                "Could not create sell order because zero or more than one trade found in db"
             )
             return False
         if trade[0].open_order_status == "open":
-            print(
-                "ERROR: Could not create sell order because open order has not been filled"
+            logger.error(
+                "Could not create sell order because open order has not been filled"
             )
             return False
         try:
@@ -265,12 +266,12 @@ class Binance(Exchange):
                 profit_pct=profit_pct * 100,
             )
         except ccxt.InsufficientFunds as e:
-            print("ERROR: create_sell_order() failed – not enough funds")
-            print(e)
+            logger.error("create_sell_order() failed – not enough funds")
+            logger.error(e)
             return False
         except Exception as e:
-            print("ERROR: create_sell_order() failed")
-            print(e)
+            logger.error("create_sell_order() failed")
+            logger.error(e)
             return False
         return True
 
@@ -304,15 +305,15 @@ class Binance(Exchange):
                             * order_detail["average"]
                         ),
                     ).where(Trade.open_order_id == row.open_order_id).execute()
-                    print(
+                    logger.info(
                         f"ⓘ EXECUTED BUY ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}]"
                     )
                     self.bot.telegram.send_message(
                         f"ⓘ <b>Executed BUY order:</b>\nSymbol: <code>{order_detail['symbol']}</code>\nAsked price: <code>{order_detail['average']}</code>\nAsked amount: <code>{order_detail['amount']}</code>"
                     )
         except Exception as e:
-            print("ERROR: check_pending_orders() for buy orders failed")
-            print(e)
+            logger.error("check_pending_orders() for buy orders failed")
+            logger.error(e)
 
         try:
             # Check close_order_status orders
@@ -337,15 +338,15 @@ class Binance(Exchange):
                         profit=profit,
                         profit_pct=profit_pct,
                     ).where(Trade.open_order_id == row.open_order_id).execute()
-                    print(
+                    logger.info(
                         f"ⓘ EXECUTED SELL ORDER: Symbol: [{order_detail['symbol']}], Asked price [{order_detail['average']}], Asked amount [{order_detail['amount']}], Profit [{profit:.2f} USDT], Profit [{profit_pct:.2f}%]"
                     )
                     self.bot.telegram.send_message(
                         f"ⓘ <b>Executed SELL order:</b>\nSymbol: <code>{order_detail['symbol']}</code>\nAsked price: <code>{order_detail['average']}</code>\nAsked amount: <code>{order_detail['amount']}</code>"
                     )
         except Exception as e:
-            print("ERROR: check_pending_orders() for sell orders failed")
-            print(e)
+            logger.error("check_pending_orders() for sell orders failed")
+            logger.error(e)
 
     def get_all_balances(self) -> Dict[str, Dict[str, Any]]:
         bal = {}

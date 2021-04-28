@@ -10,5 +10,6 @@ services:
       - "./config.json:/bot/config.json"
       - "./sandbox.db:/bot/sandbox.db"
       - "./live.db:/bot/live.db"
+      - "./tradingbot.log:/bot/tradingbot.log"
     restart: always
     command: python3 -m tradingbot

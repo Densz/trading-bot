@@ -1,9 +1,9 @@
 from tradingbot.strategy import IStrategy
 from tradingbot.customtypes import Tick, Info
+from tradingbot.logger import logger
 
 from pandas.core.frame import DataFrame
 import talib.abstract as ta
-from pprint import pprint
 
 RSI_STRATEGY = {
     "id": "RSI",
@@ -79,7 +79,7 @@ class Strategy(IStrategy):
     """
 
     def _run_strat_1(self, df: DataFrame, tick: Tick, info: Info) -> None:
-        print("Run strat 1")
+        logger.info("Run strat 1")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
         open_trade = self.database.has_trade_open(
@@ -88,7 +88,7 @@ class Strategy(IStrategy):
             timeframe=info["timeframe"],
         )
         last_bar = df.loc[0]
-        print(last_bar["RSI"])
+        logger.info(last_bar["RSI"])
 
         # There is no open trade
         if open_trade == None:
@@ -115,7 +115,7 @@ class Strategy(IStrategy):
         pass
 
     def _run_strat_2(self, df: DataFrame, tick: Tick, info: Info) -> None:
-        print("Run strat 2")
+        logger.info("Run strat 2")
         limit = 13.5  # USDT
         amount = limit / tick["close"]
         open_trade = self.database.has_trade_open(

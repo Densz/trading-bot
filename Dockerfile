@@ -17,5 +17,6 @@ RUN rm -R ta-lib ta-lib-0.4.0-src.tar.gz
 
 COPY requirements.txt .
 COPY ./tradingbot ./tradingbot
+RUN touch tradingbot.log
 
 RUN pip install -r requirements.txt

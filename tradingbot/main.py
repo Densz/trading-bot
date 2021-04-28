@@ -1,3 +1,4 @@
+from tradingbot.logger import logger
 from tradingbot.bot import Bot
 
 
@@ -6,9 +7,9 @@ def main() -> None:
         bot = Bot()
         bot.run()
     except ValueError:
-        print("ERROR: Oops! An error occured")
+        logger.error("Oops! An error occured")
     except KeyboardInterrupt:
-        print("ERROR: SIGINT received, aborting ...")
+        logger.error("SIGINT received, aborting ...")
     finally:
         if bot:
             bot.clean()

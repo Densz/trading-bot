@@ -1,4 +1,5 @@
 from tradingbot.utils import calculate_profit
+from tradingbot.logger import logger
 import arrow
 from tabulate import tabulate
 import re
@@ -335,7 +336,4 @@ class Telegram:
         for row in arr:
             msg += "<b>" + row[0] + ":</b> " + "<code>" + row[1] + "</code>"
             terminal_msg += row[0] + ": " + row[1]
-        print("-------------------------")
-        print(terminal_msg)
-        print("-------------------------")
         return msg

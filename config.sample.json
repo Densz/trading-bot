@@ -1,5 +1,6 @@
 {
   "paper_mode": true,
+  "logfile": true,
   "exchange": "binance",
   "strategy": "example_strategy.py",
   "binance": {

@@ -1,4 +1,4 @@
-from tradingbot.strategy import IStrategy
+from tradingbot.logger import logger
 import time
 import asyncio
 import ccxt
@@ -32,9 +32,7 @@ class Worker:
             tickers = self.bot.strategy.tickers
 
             for (tick, timeframe) in tickers:
-                print(
-                    "\033[34m---> Tick:", tick, "|| Timeframe:", timeframe, "\033[39m"
-                )
+                logger.info(f"Tick: {tick}, || Timeframe: {timeframe}")
                 tick_details = self.bot.exchange.fetch_current_ohlcv(tick)
                 dataframe: DataFrame = self.bot.exchange.fetch_historic_ohlcv(
                     tick, timeframe
@@ -59,24 +57,23 @@ class Worker:
                     info={"symbol": tick, "timeframe": timeframe},
                 )
         except ccxt.ExchangeNotAvailable:
-            msg = "ERROR: Binance Exchange not available trying again..."
-            print(msg)
+            msg = "Binance Exchange not available trying again..."
+            logger.error(msg)
             self.bot.telegram.send_message(msg)
             time.sleep(10)
         except:
             traceback.print_exc()
-            msg = "ERROR: An error occured: " + str(sys.exc_info()[0])
-            print(msg)
+            msg = "An error occured: " + str(sys.exc_info()[0])
+            logger.error(msg)
             self.bot.telegram.send_message(msg)
-            print("ERROR: _run_bot() trying again...")
+            logger.error("_run_bot() trying again...")
 
     async def _throttle(self):
         self._last_throttle_time = time.time()
         await self._run_bot()
         time_passed = time.time() - self._last_throttle_time
         sleep_duration = max(THROTTLE_SECS - time_passed, 0.0)
-        print(
-            f"[{datetime.fromtimestamp(self._last_throttle_time)}] Throttling: sleep for {sleep_duration:.2f}s, "
-            f"last iteration took {time_passed:.2f}s."
+        logger.warning(
+            f"Throttling: sleep for {sleep_duration:.2f}s, last iteration took {time_passed:.2f}s."
         )
         time.sleep(sleep_duration)
