@@ -18,7 +18,7 @@ class IStrategy:
         self.telegram: Telegram = bot.telegram
 
     @abstractmethod
-    def add_indicators(self, df: DataFrame) -> DataFrame:
+    def add_indicators(self, df: DataFrame, tick: Tick) -> DataFrame:
         """
         Populate indicators in there
         """

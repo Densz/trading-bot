@@ -37,22 +37,20 @@ class Worker:
                 dataframe: DataFrame = self.bot.exchange.fetch_historic_ohlcv(
                     tick, timeframe
                 )
-                # Always remove the last row of the dataframe otherwise
-                # the last candle won't be a finished candle
-                dataframe = dataframe[:-1]
-
                 if hasattr(self.bot.exchange, "trigger_stoploss_takeprofit"):
                     self.bot.exchange.trigger_stoploss_takeprofit(
                         symbol=tick_details["symbol"],
                         ohlc=tick_details,
                         timeframe=timeframe,
                     )
-                df_with_indicators = self.bot.strategy.add_indicators(dataframe)
-                sorted_df = df_with_indicators.sort_values(by="date", ascending=False)
-                sorted_df.reset_index(inplace=True)
-                del sorted_df["index"]
+                df_with_indicators = self.bot.strategy.add_indicators(
+                    dataframe, tick_details
+                )
+                # sorted_df = df_with_indicators.sort_values(by="date", ascending=False)
+                # sorted_df.reset_index(inplace=True)
+                # del sorted_df["index"]
                 self.bot.strategy.on_tick(
-                    sorted_df,
+                    df_with_indicators,
                     tick_details,
                     info={"symbol": tick, "timeframe": timeframe},
                 )

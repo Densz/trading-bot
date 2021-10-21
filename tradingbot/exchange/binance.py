@@ -41,6 +41,9 @@ class Binance(Exchange):
         data: list = self._api.fetch_ohlcv(symbol, timeframe)
         df = pd.DataFrame(data, columns=self._columns)
         df["date"] = pd.to_datetime(df["date"], unit="ms")
+        # Always remove the last row of the dataframe otherwise
+        # the last candle won't be a finished candle
+        df = df[:-1]
         return df
 
     def get_balance(self, symbol: str) -> float:
