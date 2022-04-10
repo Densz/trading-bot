@@ -50,7 +50,9 @@ class Exchange:
         )
 
     @abstractmethod
-    def fetch_historic_ohlcv(self, symbol: str, timeframe: str) -> pd.DataFrame:
+    def fetch_historic_ohlcv(
+        self, symbol: str, timeframe: str, with_live_bar: Optional[bool] = False
+    ) -> pd.DataFrame:
         raise BaseException(
             "ERROR: fetch_historic_ohlcv() method should be overridden, or it is not implemented"
         )

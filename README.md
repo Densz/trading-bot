@@ -46,6 +46,9 @@ Freeze packages
 On ubuntu
 https://sachsenhofer.io/install-ta-lib-ubuntu-server/
 
-## Running python on background
+## Run docker
 
-https://janakiev.com/blog/python-background/
+### To fix issue with creating db
+
+- `docker ps -a` then remove that container using:
+- `docker rm -v <container_name>`
